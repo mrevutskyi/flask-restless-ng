@@ -14,8 +14,9 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.orm import backref
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
@@ -24,7 +25,7 @@ from flask_restless import APIManager
 
 from ..helpers import validate_schema
 
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()  # type: ignore
 
 
 class Article(Base):
