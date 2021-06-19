@@ -46,7 +46,7 @@ try:
     # SQLAlchemy 1.4+
     from sqlalchemy.orm import DeclarativeMeta
 except ImportError:
-    from sqlalchemy.ext.declarative.api import DeclarativeMeta
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta  # type: ignore
 
 try:
     # SQLAlchemy 1.3+

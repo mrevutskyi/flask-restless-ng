@@ -53,7 +53,7 @@ class TestPerformance(unittest.TestCase):
     def setUp(self):
         app = Flask(__name__)
         self.engine = create_engine('sqlite://', echo=False)
-        session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=self.engine))
+        session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=self.engine))()
 
         Base.metadata.create_all(bind=self.engine)
         session.bulk_save_objects([Person(id=i, name=f'Person {i}') for i in range(1, 10001)])
