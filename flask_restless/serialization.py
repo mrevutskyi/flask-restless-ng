@@ -19,7 +19,7 @@ deserialization as expected by classes that follow the JSON API
 protocol.
 
 """
-
+import enum
 from abc import ABC
 from abc import abstractmethod
 from copy import copy
@@ -27,7 +27,7 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
-from typing import FrozenSet
+from typing import FrozenSet, Dict, Any
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -399,9 +399,8 @@ class DefaultSerializer(Serializer):
     def attributes_columns(self):
         return self._columns
 
-    def serialize(self, instance, only=None):
-        columns = copy(self._columns)
-
+    def serialize_attributes(self, instance, only=None) -> Dict[str, Any]:
+        columns = self.attributes_columns
         if only is not None:
             columns &= only
 
@@ -410,26 +409,24 @@ class DefaultSerializer(Serializer):
         attributes = {column: getattr(instance, column) for column in columns}
 
         for key, value in attributes.items():
-            # Call any functions that appear in the result.
-            if callable(value):
-                attributes[key] = value()
-
-        # Serialize any date- or time-like objects that appear in the
-        # attributes.
-        #
-        # TODO In Flask 1.0, the default JSON encoder for the Flask
-        # application object does this automatically. Alternately, the
-        # user could have set a smart JSON encoder on the Flask
-        # application, which would cause these attributes to be
-        # converted to strings when the Response object is created (in
-        # the `jsonify` function, for example). However, we should not
-        # rely on that JSON encoder since the user could set any crazy
-        # encoder on the Flask application.
-        for key, value in attributes.items():
+            # Serialize any date- or time-like objects that appear in the attributes.
             if isinstance(value, (date, datetime, time)):
                 attributes[key] = value.isoformat()
             elif isinstance(value, timedelta):
                 attributes[key] = value.total_seconds()
+            # Enums are not serializable by default, use 'name' property
+            elif isinstance(value, enum.Enum):
+                attributes[key] = value.name
+
+        return attributes
+
+    def serialize(self, instance, only=None):
+        attributes = self.serialize_attributes(instance, only)
+
+        for key, value in attributes.items():
+            # Call any functions that appear in the result.
+            if callable(value):
+                attributes[key] = value()
 
         # Get the ID and type of the resource.
         id_ = str(getattr(instance, self._primary_key))

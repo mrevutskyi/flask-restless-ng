@@ -16,7 +16,6 @@ their SQLAlchemy models.
 
 """
 from collections import defaultdict
-from collections import namedtuple
 from typing import Dict
 from typing import Optional
 from uuid import uuid1
@@ -24,6 +23,7 @@ from uuid import uuid1
 from flask import Blueprint
 from werkzeug.urls import url_quote_plus
 
+from . import registry
 from .helpers import get_model
 from .helpers import primary_key_names
 from .serialization import DefaultDeserializer
@@ -43,21 +43,6 @@ WRITEONLY_METHODS = frozenset(('PATCH', 'POST', 'DELETE'))
 
 #: The set of all recognized HTTP methods.
 ALL_METHODS = READONLY_METHODS | WRITEONLY_METHODS
-
-
-#: A tuple that stores information about a created API.
-#:
-#: The elements are, in order,
-#:
-#: - `collection_name`, the name by which a collection of instances of
-#:   the model exposed by this API is known,
-#: - `blueprint_name`, the name of the blueprint that contains this API,
-#: - `serializer`, the subclass of :class:`Serializer` provided for the
-#:   model exposed by this API.
-#: - `primary_key`, the primary key used by the model
-#: - `url_prefix`, the url prefix to use for the collection
-#:
-APIInfo = namedtuple('APIInfo', ['collection_name', 'blueprint_name', 'serializer', 'primary_key', 'url_prefix'])
 
 
 class IllegalArgumentError(Exception):
@@ -201,7 +186,7 @@ class APIManager:
         except KeyError:
             raise ValueError(f'Model is not registered with the API: {model}')
 
-    def serializer_for(self, model):
+    def serializer_for(self, model) -> Serializer:
         """Returns the serializer for the specified model, as specified
         by the `serializer` keyword argument to
         :meth:`create_api_blueprint`.
@@ -677,8 +662,9 @@ class APIManager:
 
         # Finally, record that this APIManager instance has created an API for
         # the specified model.
-        self.created_apis_for[model] = APIInfo(collection_name, blueprint.name,
-                                               serializer, primary_key, prefix)
+        api_info = registry.APIInfo(collection_name, blueprint.name, serializer, primary_key, prefix)
+        self.created_apis_for[model] = api_info
+        registry.add(model, api_info)
         return blueprint
 
     def serialize_relationship(self, instance):

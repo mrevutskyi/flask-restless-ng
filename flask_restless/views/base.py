@@ -55,6 +55,7 @@ from ..search import search
 from ..serialization import DeserializationException
 from ..serialization import SerializationException
 from ..typehints import ResponseTuple
+from .. import registry
 from .helpers import count
 from .helpers import upper_keys as upper
 
