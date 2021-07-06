@@ -303,7 +303,7 @@ class APIManager:
             max_page_size: int = 100,
             preprocessors=None,
             postprocessors=None,
-            primary_key: str = 'id',
+            primary_key: Optional[str] = None,
             serializer: Serializer = None,
             deserializer: Deserializer = None,
             includes=None,
@@ -527,6 +527,14 @@ class APIManager:
             for attr in additional_attributes:
                 if not hasattr(model, attr):
                     raise AttributeError(f'no attribute "{attr}" on model {model}')
+
+        # find the primary_key of the model or try and use 'id'
+        if primary_key is None:
+            pk_names = primary_key_names(model)
+            if len(pk_names) > 0:
+                primary_key = pk_names[0]
+            else:
+                primary_key = 'id'
 
         # Create a default serializer and deserializer if none have been
         # provided.

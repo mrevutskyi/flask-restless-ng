@@ -346,10 +346,10 @@ class TestAPIManager(ManagerTestBase):
 
     def test_missing_id(self):
         """Tests that calling :meth:`APIManager.create_api` on a model without
-        an ``id`` column raises an exception if `primary_key` is not provided
+        an ``id`` column does not raise an exception if `primary_key` is not
+        provided
         """
-        with self.assertRaises(ValueError):
-            self.manager.create_api(self.Tag)
+        self.manager.create_api(self.Tag)
 
     def test_empty_collection_name(self):
         """Tests that calling :meth:`APIManager.create_api` with an empty
