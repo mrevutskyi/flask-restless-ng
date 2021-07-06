@@ -283,7 +283,7 @@ class TestDocumentStructure(ManagerTestBase):
         actual_person = document['data']
         # Compare it with what we expect to get.
         response = self.app.get('/api/person/1')
-        expected_person = loads(response.data)['data']
+        expected_person = response.json['data']
         assert actual_person == expected_person
 
     def test_related_resource_url_to_many(self):
@@ -303,7 +303,7 @@ class TestDocumentStructure(ManagerTestBase):
         self.session.commit()
         # Get a resource that has links.
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         # Get the related resource URL.
         resource_url = person['relationships']['articles']['links']['related']
@@ -311,13 +311,13 @@ class TestDocumentStructure(ManagerTestBase):
         path = urlparse(resource_url).path
         # Fetch the resource at the related resource URL.
         response = self.app.get(path)
-        document = loads(response.data)
+        document = response.json
         actual_articles = document['data']
         # Compare it with what we expect to get.
         #
         # TODO To make this test more robust, filter by `article.author == 1`.
         response = self.app.get('/api/article')
-        document = loads(response.data)
+        document = response.json
         expected_articles = document['data']
         assert actual_articles == expected_articles
 
@@ -424,9 +424,9 @@ class TestDocumentStructure(ManagerTestBase):
         response = self.app.get('/api/person/1')
         document1 = loads(response.data)
         person = document1['data']
-        selfurl = person['links']['self']
+        self_url = person['links']['self']
         # The Flask test client doesn't need the `netloc` part of the URL.
-        path = urlparse(selfurl).path
+        path = urlparse(self_url).path
         response = self.app.get(path)
         document2 = loads(response.data)
         assert document1 == document2

@@ -1,27 +1,28 @@
-import pytest
+import datetime
 import enum
 import json
-import datetime
-from sqlalchemy import Column, Boolean, Date, DateTime, Time, Enum, Interval, Unicode, Text
+
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import Date
+from sqlalchemy import DateTime
+from sqlalchemy import Enum
 from sqlalchemy import Float
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Interval
 from sqlalchemy import String
-from sqlalchemy import create_engine
+from sqlalchemy import Text
+from sqlalchemy import Time
+from sqlalchemy import Unicode
 from sqlalchemy.orm import DeclarativeMeta
-from sqlalchemy.orm import backref
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
 
 from flask_restless.serialization import DefaultSerializer
-
 
 Base: DeclarativeMeta = declarative_base()  # type: ignore
 
 TEST_TEXT_PARAGRAPH = """
-“Twenty years from now you will be more disappointed by the things that you didn't do than by the ones you did do. So throw off the bowlines. 
+“Twenty years from now you will be more disappointed by the things that you didn't do than by the ones you did do. So throw off the bowlines.
 Sail away from the safe harbor. Catch the trade winds in your sails. Explore. Dream. Discover.”
 
 ― H. Jackson Brown Jr., P.S. I Love You

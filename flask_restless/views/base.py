@@ -55,7 +55,6 @@ from ..search import search
 from ..serialization import DeserializationException
 from ..serialization import SerializationException
 from ..typehints import ResponseTuple
-from .. import registry
 from .helpers import count
 from .helpers import upper_keys as upper
 
@@ -1071,9 +1070,7 @@ class FetchCollection(FetchView):
             offset = (page_number - 1) * page_size
             # TODO Use Query.slice() instead, since it's easier to use.
             instances = query.limit(page_size).offset(offset).all()
-        collection_name = self.api_manager.collection_name(self.model)
-        only = self.sparse_fields.get(collection_name)
-        data = [serializer.serialize(instance, only=only) for instance in instances]
+        data = self._serialize_instances(instances)
         paginated_data = Paginated(data, page_size=page_size, num_results=num_results, next_=next_, prev=prev, first=first, last=last)
         links = {'self': self.api_manager.url_for(self.model)}
         links.update(paginated_data.pagination_links)

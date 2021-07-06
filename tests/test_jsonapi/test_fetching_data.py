@@ -14,9 +14,15 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeMeta
+
+try:
+    # SQLAlchemy 1.4+
+    from sqlalchemy.orm import DeclarativeMeta
+except ImportError:
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta  # type: ignore
+
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker

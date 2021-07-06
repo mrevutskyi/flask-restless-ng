@@ -27,7 +27,9 @@ from datetime import date
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
-from typing import FrozenSet, Dict, Any
+from typing import Any
+from typing import Dict
+from typing import FrozenSet
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -350,7 +352,7 @@ class DefaultSerializer(Serializer):
             if primary_key not in pk_names:
                 raise ValueError(f'Column `{primary_key}` is not a primary key')
         else:
-            raise ValueError(f'`{primary_key}` is required')
+            raise ValueError('`primary_key` is required')
 
         self._primary_key = primary_key
         self._relations = set(get_relations(model))
