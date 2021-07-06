@@ -34,7 +34,6 @@ from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import RelationshipProperty as RelProperty
 from sqlalchemy.orm import class_mapper
-from sqlalchemy.orm import load_only
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.attributes import QueryableAttribute
@@ -278,9 +277,10 @@ def selectinload_included_relationships(
         attribute = getattr(model, path)
         if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
             options = selectinload(attribute)
-            # if request contains filters we need to load all columns
-            if not filters:
-                options = options.options(load_only('id'))
+            # TODO: re-enable after creating a schema for tracking primary key names for attributes
+            # # if request contains filters we need to load all columns
+            # if not filters:
+            #     options = options.options(load_only('id'))
             query = query.options(options)
 
     return query

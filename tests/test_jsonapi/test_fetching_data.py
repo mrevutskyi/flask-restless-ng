@@ -38,7 +38,7 @@ class Article(Base):
     __tablename__ = 'article'
     id = Column(Integer, primary_key=True)
     title = Column(Unicode)
-    author_id = Column(Integer, ForeignKey('person.id'))
+    author_id = Column(Integer, ForeignKey('person.pk'))
     author = relationship('Person')
 
 
@@ -51,7 +51,7 @@ class Comment(Base):
 
 class Person(Base):
     __tablename__ = 'person'
-    id = Column(Integer, primary_key=True)
+    pk = Column(Integer, primary_key=True)  # non-standard name for primary key
     name = Column(Unicode)
     age = Column(Integer)
     other = Column(Float)
@@ -73,7 +73,6 @@ class TestFetching:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        print('setup fixture')
         manager = APIManager(self.app, session=self.session)
         manager.create_api(Article)
         manager.create_api(Person)
@@ -156,7 +155,7 @@ class TestFetching:
         """
         self.session.bulk_save_objects([
             Article(id=1, author_id=1),
-            Person(id=1)
+            Person(pk=1)
         ])
         self.session.commit()
 
@@ -190,7 +189,7 @@ class TestFetching:
 
         """
         self.session.bulk_save_objects([
-            Person(id=1),
+            Person(pk=1),
             Article(id=1, author_id=1),
             Article(id=2, author_id=1),
         ])
@@ -216,7 +215,7 @@ class TestFetching:
 
         """
         self.session.bulk_save_objects([
-            Person(id=1),
+            Person(pk=1),
             Article(id=1, author_id=1),
         ])
         self.session.commit()
@@ -235,7 +234,7 @@ class TestFetching:
         .. _Fetching Resources: https://jsonapi.org/format/#fetching-resources
 
         """
-        self.session.add(Person(id=1))
+        self.session.add(Person(pk=1))
         self.session.commit()
 
         document = self.fetch_and_validate('/api/person/1/articles')
@@ -337,7 +336,7 @@ class TestFetching:
 
         """
         self.session.bulk_save_objects([
-            Person(id=1),
+            Person(pk=1),
             Article(id=1, author_id=1)
         ])
         self.session.commit()
