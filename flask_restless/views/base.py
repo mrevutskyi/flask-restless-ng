@@ -35,6 +35,9 @@ from flask import request
 from flask.views import MethodView
 from flask.views import View
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import load_only
+from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.dynamic import DynamicAttributeImpl
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import false as FALSE
 from werkzeug.exceptions import HTTPException
@@ -47,8 +50,8 @@ from ..helpers import get_inclusions_for_instances
 from ..helpers import get_model
 from ..helpers import get_related_model
 from ..helpers import is_like_list
+from ..helpers import is_proxy
 from ..helpers import query_by_primary_key
-from ..helpers import selectinload_included_relationships
 from ..helpers import session_query
 from ..search import ComparisonToNull
 from ..search import search
@@ -1030,6 +1033,39 @@ class FetchView(View):
             raise MultipleExceptions(failed)
         return serialized_instances
 
+    def _selectinload_included_relationships(
+            self,
+            query: Query,
+            include: Set[str],
+            relationship_columns: Set[str],
+            filters=None
+    ) -> Query:
+        join_paths = {path.split('.')[0] for path in include}
+
+        for path in join_paths:
+            attribute = getattr(self.model, path)
+            if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
+                query = query.options(selectinload(attribute))
+
+        for path in relationship_columns:
+            attribute = getattr(self.model, path)
+            if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
+                options = selectinload(attribute)
+
+                # if request contains filters we need to load all columns
+                if not filters:
+                    try:
+                        related_model = get_related_model(self.model, path)
+                        pk = self.api_manager.primary_key_for(related_model)
+                        options = options.options(load_only(pk))
+                    except KeyError:
+                        # theoretically all models should be known to the API, and we should raise a Server Error if they are not,
+                        # but to keep backward compatibility we let it pass
+                        pass
+                query = query.options(options)
+
+        return query
+
 
 class FetchCollection(FetchView):
     """Processes requests to fetch a resource collection."""
@@ -1049,7 +1085,7 @@ class FetchCollection(FetchView):
 
         serializer = self.api_manager.serializer_for(self.model)
         query = search(self.session, self.model, filters=filters, sort=sort)
-        query = selectinload_included_relationships(self.model, query, include, serializer.relationship_columns, filters=filters)
+        query = self._selectinload_included_relationships(query, include, serializer.relationship_columns, filters=filters)
 
         if page_size == 0:
             instances = query.all()
@@ -1111,7 +1147,7 @@ class FetchResource(FetchView):
         primary_key = self.api_manager.primary_key_for(self.model)
         query = query_by_primary_key(self.session, self.model, resource_id, primary_key)
         serializer = self.api_manager.serializer_for(self.model)
-        query = selectinload_included_relationships(self.model, query, include, serializer.relationship_columns)
+        query = self._selectinload_included_relationships(query, include, serializer.relationship_columns)
         instance = query.first()
         if not instance:
             raise NotFound(details=f'No resource with ID {resource_id}')

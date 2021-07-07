@@ -31,21 +31,12 @@ from sqlalchemy.ext.hybrid import HYBRID_PROPERTY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import ColumnProperty
-from sqlalchemy.orm import Query
 from sqlalchemy.orm import RelationshipProperty as RelProperty
 from sqlalchemy.orm import class_mapper
-from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.attributes import QueryableAttribute
-from sqlalchemy.orm.dynamic import DynamicAttributeImpl
 from sqlalchemy.sql import func
 from sqlalchemy.sql.expression import ColumnElement
-
-try:
-    # SQLAlchemy 1.4+
-    from sqlalchemy.orm import DeclarativeMeta
-except ImportError:
-    from sqlalchemy.ext.declarative.api import DeclarativeMeta  # type: ignore
 
 try:
     # SQLAlchemy 1.3+
@@ -257,33 +248,6 @@ def query_by_primary_key(session, model, pk_value, primary_key=None):
     pk_name = primary_key
     query = session_query(session, model)
     return query.filter(getattr(model, pk_name) == pk_value)
-
-
-def selectinload_included_relationships(
-        model: DeclarativeMeta,
-        query: Query,
-        include: Set[str],
-        relationship_columns: Set[str],
-        filters=None
-) -> Query:
-    join_paths = {path.split('.')[0] for path in include}
-
-    for path in join_paths:
-        attribute = getattr(model, path)
-        if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
-            query = query.options(selectinload(attribute))
-
-    for path in relationship_columns:
-        attribute = getattr(model, path)
-        if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
-            options = selectinload(attribute)
-            # TODO: re-enable after creating a schema for tracking primary key names for attributes
-            # # if request contains filters we need to load all columns
-            # if not filters:
-            #     options = options.options(load_only('id'))
-            query = query.options(options)
-
-    return query
 
 
 def get_inclusions_for_instances(include: Set[str], instances) -> Set:
