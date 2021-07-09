@@ -22,6 +22,7 @@ protocol.
 import enum
 from abc import ABC
 from abc import abstractmethod
+from collections import namedtuple
 from copy import copy
 from datetime import date
 from datetime import datetime
@@ -35,6 +36,8 @@ from urllib.parse import urljoin
 
 from flask import request
 from sqlalchemy import Column
+from sqlalchemy import inspect
+from sqlalchemy.orm.base import MANYTOONE
 
 from .helpers import attribute_columns
 from .helpers import foreign_keys
@@ -49,6 +52,8 @@ from .helpers import strings_to_datetimes
 #: Names of columns which should definitely not be considered user columns to
 #: be included in a dictionary representation of a model.
 COLUMN_BLACKLIST = ('_sa_polymorphic_on', )
+
+RelationshipInfo = namedtuple('RelationshipInfo', ['foreign_key', 'target_model'])
 
 
 class SerializationException(Exception):
@@ -393,6 +398,20 @@ class DefaultSerializer(Serializer):
         self._relations = frozenset(self._relations)
         self._columns = frozenset(columns)
 
+        # Finding ManyToOne relationships that can be rendered using FK
+        inspected_model = inspect(model)
+        self._many_to_one_relationships = {}
+
+        for relationship in inspected_model.relationships:
+            if relationship.key in self._relations and relationship.direction == MANYTOONE:
+                foreign_key = relationship.local_remote_pairs[0][0].key
+                target_model = relationship.mapper.class_
+                self._many_to_one_relationships[relationship.key] = RelationshipInfo(foreign_key=foreign_key, target_model=target_model)
+
+    @property
+    def many_to_one_relationships(self):
+        return set(self._many_to_one_relationships.keys())
+
     @property
     def relationship_columns(self):
         return self._relations
@@ -491,6 +510,19 @@ class DefaultSerializer(Serializer):
                 pass
             else:
                 result['links']['related'] = related_link
+
+        relationship_info = self._many_to_one_relationships.get(relation)
+        if relationship_info:
+            fk_value = getattr(instance, relationship_info.foreign_key)
+            if fk_value is None:
+                result['data'] = None
+            else:
+                result['data'] = {
+                    'id': str(fk_value),
+                    'type': self._api_manager.collection_name(relationship_info.target_model)
+                }
+            return result
+
         # Get the related value so we can see if it is a to-many
         # relationship or a to-one relationship.
         related_value = getattr(instance, relation)

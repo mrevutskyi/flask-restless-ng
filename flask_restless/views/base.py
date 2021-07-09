@@ -55,8 +55,10 @@ from ..helpers import query_by_primary_key
 from ..helpers import session_query
 from ..search import ComparisonToNull
 from ..search import search
+from ..serialization import DefaultSerializer
 from ..serialization import DeserializationException
 from ..serialization import SerializationException
+from ..serialization import Serializer
 from ..typehints import ResponseTuple
 from .helpers import count
 from .helpers import upper_keys as upper
@@ -1037,7 +1039,7 @@ class FetchView(View):
             self,
             query: Query,
             include: Set[str],
-            relationship_columns: Set[str],
+            serializer: Serializer,
             filters=None
     ) -> Query:
         join_paths = {path.split('.')[0] for path in include}
@@ -1046,6 +1048,13 @@ class FetchView(View):
             attribute = getattr(self.model, path)
             if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 query = query.options(selectinload(attribute))
+
+        relationship_columns = serializer.relationship_columns
+
+        # `many_to_one_relationships` is not a part of the base Serializer class, so to keep backward compatibility
+        # check if we use DefaultSerializer
+        if isinstance(serializer, DefaultSerializer):
+            relationship_columns -= serializer.many_to_one_relationships
 
         for path in relationship_columns:
             attribute = getattr(self.model, path)
@@ -1085,7 +1094,7 @@ class FetchCollection(FetchView):
 
         serializer = self.api_manager.serializer_for(self.model)
         query = search(self.session, self.model, filters=filters, sort=sort)
-        query = self._selectinload_included_relationships(query, include, serializer.relationship_columns, filters=filters)
+        query = self._selectinload_included_relationships(query, include, serializer, filters=filters)
 
         if page_size == 0:
             instances = query.all()
@@ -1147,7 +1156,7 @@ class FetchResource(FetchView):
         primary_key = self.api_manager.primary_key_for(self.model)
         query = query_by_primary_key(self.session, self.model, resource_id, primary_key)
         serializer = self.api_manager.serializer_for(self.model)
-        query = self._selectinload_included_relationships(query, include, serializer.relationship_columns)
+        query = self._selectinload_included_relationships(query, include, serializer)
         instance = query.first()
         if not instance:
             raise NotFound(details=f'No resource with ID {resource_id}')
