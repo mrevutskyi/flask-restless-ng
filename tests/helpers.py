@@ -32,6 +32,13 @@ from sqlalchemy.orm.session import Session as SessionBase
 from sqlalchemy.types import CHAR
 from sqlalchemy.types import TypeDecorator
 
+try:
+    # SQLAlchemy 1.4+
+    from sqlalchemy.orm import DeclarativeMeta
+except ImportError:
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta  # type: ignore # noqa
+
+
 from flask_restless import CONTENT_TYPE
 from flask_restless import APIManager
 

@@ -7,28 +7,19 @@ the JSON API specification.
 
 """
 import pytest
-from flask import Flask
 from sqlalchemy import Column
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
-from sqlalchemy import create_engine
-
-try:
-    # SQLAlchemy 1.4+
-    from sqlalchemy.orm import DeclarativeMeta
-except ImportError:
-    from sqlalchemy.ext.declarative.api import DeclarativeMeta  # type: ignore
-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
 
 from flask_restless import APIManager
 
+from ..conftest import BaseTestClass
+from ..helpers import DeclarativeMeta
 from ..helpers import validate_schema
 
 Base: DeclarativeMeta = declarative_base()  # type: ignore
@@ -58,18 +49,12 @@ class Person(Base):
     articles = relationship('Article')
 
 
-class TestFetching:
+class TestFetching(BaseTestClass):
     """Tests corresponding to the `Fetching Data`_ section of the JSON API specification.
 
     .. _Fetching Data: https://jsonapi.org/format/#fetching
 
     """
-
-    @classmethod
-    def setup_class(cls):
-        cls.engine = create_engine('sqlite://')
-        scoped_session_cls = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=cls.engine))
-        cls.session = scoped_session_cls()
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -81,20 +66,6 @@ class TestFetching:
         Base.metadata.create_all(bind=self.engine)
         yield
         Base.metadata.drop_all(bind=self.engine)
-
-    def setup_method(self):
-        app = Flask(__name__)
-        app.config['TESTING'] = True
-        self.app = app
-        self.client = app.test_client()
-
-    def fetch_and_validate(self, uri: str, expected_response_code: int = 200):
-        response = self.client.get(uri)
-        assert response.status_code == expected_response_code
-        document = response.json
-        validate_schema(document)
-
-        return document
 
     def test_single_resource(self):
         """Tests for fetching a single resource.
