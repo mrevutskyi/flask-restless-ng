@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/Flask-Restless-NG.svg)](https://badge.fury.io/py/Flask-Restless-NG)
 [![Build Status](https://travis-ci.com/mrevutskyi/flask-restless-ng.svg?branch=master)](https://travis-ci.com/mrevutskyi/flask-restless-ng)
 [![Coverage Status](https://coveralls.io/repos/github/mrevutskyi/flask-restless-ng/badge.svg?branch=master)](https://coveralls.io/github/mrevutskyi/flask-restless-ng?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/flask-restless-ng/badge/?version=latest)](https://flask-restless-ng.readthedocs.io/en/latest/?badge=latest)
 
 ## About
 

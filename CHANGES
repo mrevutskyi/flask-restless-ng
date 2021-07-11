@@ -4,6 +4,11 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.2.1
+-------------
+- Minor improvements and fixes
+
+
 Version 2.2.0
 -------------
 - Serialize To-One relationships using foreign key, instead of trying to fetch the whole
