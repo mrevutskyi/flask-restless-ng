@@ -35,7 +35,7 @@ class MyEnum(enum.Enum):
     three = 3
 
 
-class TestModel(Base):
+class Model(Base):
     __tablename__ = 'article'
     id = Column(Integer, primary_key=True)
     string_field = Column(String(32))
@@ -52,8 +52,8 @@ class TestModel(Base):
 
 
 def test_serialize_attributes():
-    serializer = DefaultSerializer(TestModel, 'test-model', None, primary_key='id')
-    instance = TestModel(
+    serializer = DefaultSerializer(Model, 'test-model', None, primary_key='id')
+    instance = Model(
         id=1,
         string_field='string value',
         unicode_field='Ѧ',

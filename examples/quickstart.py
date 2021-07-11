@@ -4,7 +4,6 @@ import flask_sqlalchemy
 
 # Create the Flask application and the Flask-SQLAlchemy object.
 app = flask.Flask(__name__)
-app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
 db = flask_sqlalchemy.SQLAlchemy(app)
 
@@ -20,7 +19,7 @@ class Article(db.Model):
     title = db.Column(db.Unicode)
     published_at = db.Column(db.DateTime)
     author_id = db.Column(db.Integer, db.ForeignKey('person.id'))
-    author = db.relationship(Person, backref=db.backref('articles', lazy='dynamic'))
+    author = db.relationship(Person, backref=db.backref('articles'))
 
 
 # Create the database tables.

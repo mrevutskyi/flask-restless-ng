@@ -12,13 +12,13 @@ Flask-Restless supports Python 3.6+
 Flask-Restless has the following dependencies (which will be automatically
 installed if you use ``pip``):
 
-* `Flask`_ version 0.10 or greater
-* `SQLAlchemy`_ version 0.8 or greater
+* `Flask`_ version 1.0 or greater
+* `SQLAlchemy`_ version 1.3 or greater
 * `python-dateutil`_ version strictly greater than 2.2
 * `Flask-SQLAlchemy`_, *only if* you want to define your models using Flask-SQLAlchemy
 
-.. _Python Package Index: https://pypi.python.org/pypi/Flask-Restless
-.. _GitHub: https://github.com/jfinkels/flask-restless
+.. _Python Package Index: https://pypi.python.org/pypi/Flask-Restless-NG
+.. _GitHub: https://github.com/mrevutskyi/flask-restless-ng
 .. _Flask: http://flask.pocoo.org
 .. _SQLAlchemy: https://sqlalchemy.org
 .. _python-dateutil: http://labix.org/python-dateutil

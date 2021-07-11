@@ -6,9 +6,6 @@ models defined using SQLAlchemy (or Flask-SQLAlchemy). The generated APIs
 satisfy the requirements of the `JSON API`_ specification.
 
 .. _JSON API: http://jsonapi.org
-.. _association proxies: https://docs.sqlalchemy.org/en/latest/orm/extensions/associationproxy.html
-.. _Marshmallow: https://marshmallow.readthedocs.org/
-.. _updated Marshmallow example: https://github.com/jfinkels/flask-restless/compare/marshmallow-example
 
 
 User's guide

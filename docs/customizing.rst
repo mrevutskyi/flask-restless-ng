@@ -199,7 +199,7 @@ For a complete version of this example, see the
 source distribution, or `view it online`_.
 
 .. _Marshmallow: https://marshmallow.readthedocs.org
-.. _view it online: https://github.com/jfinkels/flask-restless/tree/master/examples/server_configurations/custom_serialization.py
+.. _view it online: https://github.com/mrevutskyi/flask-restless-ng/tree/master/examples/server_configurations/custom_serialization.py
 
 Per-model serialization
 -----------------------
@@ -274,7 +274,7 @@ invalid fields, the JSON response will look like this:
      ]
    }
 
-.. _issue tracker: https://github.com/jfinkels/flask-restless/issues
+.. _issue tracker: https://github.com/mrevutskyi/flask-restless-ng/issues
 
 .. _processors:
 
@@ -592,4 +592,4 @@ For a more complete example using `Flask-Login`_, see the
 distribution, or `view the authentication example online`_.
 
 .. _Flask-Login: https://packages.python.org/Flask-Login
-.. _view the authentication example online: https://github.com/jfinkels/flask-restless/tree/master/examples/server_configurations/authentication
+.. _view the authentication example online: https://github.com/mrevutskyi/flask-restless-ng/tree/master/examples/server_configurations/authentication
