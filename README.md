@@ -96,6 +96,11 @@ app.run()
 
 More information on how to use this extension is available in the [documentation][5].
 
+## Feedback ##
+
+Please fill out the [feedback form](https://forms.gle/Bpj3fEJbFMvDqsDUA), this would help me determine if this
+package is still valuable
+
 ## Contact ##
 
 Maksym Revutskyi <maksym.revutskyi@gmail.com>
