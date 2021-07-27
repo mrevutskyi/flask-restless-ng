@@ -403,7 +403,7 @@ class APIManager:
         relationships of the specified `model`, given either as strings or as
         the attributes themselves. If it is a list, only these fields will
         appear in the resource object representation of an instance of `model`.
-        In other words, `only` is a whitelist of fields. The ``id`` and
+        In other words, `only` is a allowlist of fields. The ``id`` and
         ``type`` elements of the resource object will always be present
         regardless of the value of this argument. If `only` contains a string
         that does not name a column in `model`, it will be ignored.
@@ -419,7 +419,7 @@ class APIManager:
         relationships of the specified `model`, given either as strings or as
         the attributes themselves. If it is a list, all fields **except** these
         will appear in the resource object representation of an instance of
-        `model`. In other words, `exclude` is a blacklist of fields. The ``id``
+        `model`. In other words, `exclude` is an blocklist of fields. The ``id``
         and ``type`` elements of the resource object will always be present
         regardless of the value of this argument. If `exclude` contains a
         string that does not name a column in `model`, it will be ignored.

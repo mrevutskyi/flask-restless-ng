@@ -46,8 +46,7 @@ except ImportError:
 
 #: Names of attributes which should definitely not be considered relations when
 #: dynamically computing a list of relations of a SQLAlchemy model.
-RELATION_BLACKLIST = ('query', 'query_class', '_sa_class_manager',
-                      '_decl_class_registry')
+RELATION_EXCLUDE_LIST = {'query', 'query_class', '_sa_class_manager', '_decl_class_registry'}
 
 #: Types which should be considered columns of a model when iterating over all
 #: attributes of a model class.
@@ -83,7 +82,7 @@ def session_query(session, model):
 def get_relations(model):
     """Returns a list of relation names of `model` (as a list of strings)."""
     return [k for k in dir(model)
-            if not (k.startswith('_') or k in RELATION_BLACKLIST)
+            if not (k.startswith('_') or k in RELATION_EXCLUDE_LIST)
             and get_related_model(model, k)]
 
 

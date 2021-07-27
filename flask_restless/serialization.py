@@ -51,7 +51,7 @@ from .helpers import strings_to_datetimes
 
 #: Names of columns which should definitely not be considered user columns to
 #: be included in a dictionary representation of a model.
-COLUMN_BLACKLIST = ('_sa_polymorphic_on', )
+COLUMN_EXCLUDE_LIST = {'_sa_polymorphic_on'}
 
 RelationshipInfo = namedtuple('RelationshipInfo', ['foreign_key', 'target_model'])
 
@@ -392,8 +392,8 @@ class DefaultSerializer(Serializer):
         # https://jsonapi.org/format/#document-resource-object-attributes
         columns -= set(foreign_keys(model))
 
-        # Exclude column names that are blacklisted.
-        columns = {column for column in columns if not column.startswith('__') and column not in COLUMN_BLACKLIST}
+        # Exclude column names that are on the exclude list.
+        columns = {column for column in columns if not column.startswith('__') and column not in COLUMN_EXCLUDE_LIST}
 
         self._relations = frozenset(self._relations)
         self._columns = frozenset(columns)
