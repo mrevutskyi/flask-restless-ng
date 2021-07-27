@@ -722,10 +722,8 @@ class APIManager:
         result = getattr(instance, self.primary_key_for(instance))
         if not as_string:
             return result
-        try:
-            return str(result)
-        except UnicodeEncodeError:
-            return url_quote_plus(result.encode('utf-8'))
+
+        return str(result)
 
     def create_api(self, *args, **kw):
         """Creates and possibly registers a ReSTful API blueprint for

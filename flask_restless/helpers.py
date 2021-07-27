@@ -145,14 +145,9 @@ def foreign_key_columns(model):
     foreign keys for relationships in the specified model class.
 
     """
-    try:
-        inspector = sqlalchemy_inspect(model)
-    except NoInspectionAvailable:
-        # Well, the inspection of a model class returns a mapper anyway, so
-        # let's just assume the inspection would have returned the mapper.
-        inspector = class_mapper(model)
+    inspector = sqlalchemy_inspect(model)
     all_columns = inspector.columns
-    return [c for c in all_columns if c.foreign_keys]
+    return [column for column in all_columns if column.foreign_keys]
 
 
 def foreign_keys(model):
