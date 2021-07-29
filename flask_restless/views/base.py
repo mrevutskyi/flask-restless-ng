@@ -1065,6 +1065,12 @@ class FetchView(View):
                 if not filters:
                     try:
                         related_model = get_related_model(self.model, path)
+                        # SQLAlchemy does not build correct `selectinload` queries for models that have special select join
+                        # I can not reproduce this issue with SQLite so for now disabling until we know that special select is not being used
+                        # and for now I was only able to figure it for flask_sqlalchemy
+                        # Will need to do more testing on an actual MySQL DB
+                        if not hasattr(related_model, 'query') or related_model.query.whereclause is not None:
+                            continue
                         pk = self.api_manager.primary_key_for(related_model)
                         options = options.options(load_only(pk))
                     except KeyError:

@@ -26,13 +26,11 @@ from sqlalchemy import Date
 from sqlalchemy import DateTime
 from sqlalchemy import Interval
 from sqlalchemy import Time
-from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.ext.hybrid import HYBRID_PROPERTY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import RelationshipProperty as RelProperty
-from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.sql import func

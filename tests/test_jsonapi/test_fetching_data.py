@@ -7,6 +7,7 @@ the JSON API specification.
 
 """
 import pytest
+from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
@@ -20,7 +21,6 @@ from flask_restless import APIManager
 
 from ..conftest import BaseTestClass
 from ..helpers import DeclarativeMeta
-from ..helpers import validate_schema
 
 Base: DeclarativeMeta = declarative_base()  # type: ignore
 
@@ -49,6 +49,19 @@ class Person(Base):
     articles = relationship('Article')
 
 
+class Parent(Base):
+    __tablename__ = 'parent'
+    id = Column(Integer, primary_key=True)
+    children = relationship('Child', primaryjoin='and_(Parent.id==Child.parent_id,Child.invisible==0)')
+
+
+class Child(Base):
+    __tablename__ = 'child'
+    id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('parent.id'))
+    invisible = Column(Boolean)
+
+
 class TestFetching(BaseTestClass):
     """Tests corresponding to the `Fetching Data`_ section of the JSON API specification.
 
@@ -62,6 +75,8 @@ class TestFetching(BaseTestClass):
         manager.create_api(Article)
         manager.create_api(Person)
         manager.create_api(Comment)
+        manager.create_api(Parent, page_size=0)
+        manager.create_api(Child)
 
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -112,9 +127,12 @@ class TestFetching(BaseTestClass):
         self.session.commit()
 
         document = self.fetch_and_validate('/api/article')
-        validate_schema(document)
         articles = document['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
+
+    def test_collection_with_complex_relationship(self):
+        document = self.fetch_and_validate('/api/parent')
+        assert document['data'] == []
 
     def test_related_resource(self):
         """Tests for fetching a to-one related resource.

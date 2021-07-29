@@ -450,141 +450,6 @@ class TestUpdating(ManagerTestBase):
         assert response.status_code == 204
         assert person.name == 'bar'
 
-    # TODO This is not required by JSON API, and it was a little bit flimsy
-    # anyway.
-    #
-    # def test_patch_update_relations(self):
-    #     """Test for posting a new model and simultaneously adding related
-    #     instances *and* updating information on those instances.
-
-    #     For more information see issue #164.
-
-    #     """
-    #     # First, create a new computer object with an empty `name` field and
-    #     # a new person with no related computers.
-    #     response = self.app.post('/api/computer', data=dumps({}))
-    #     assert 201 == response.status_code
-    #     response = self.app.post('/api/person', data=dumps({}))
-    #     assert 201 == response.status_code
-    #     # Second, patch the person by setting its list of related computer
-    #     # instances to include the previously created computer, *and*
-    #     # simultaneously update the `name` attribute of that computer.
-    #     data = dict(computers=[dict(id=1, name='foo')])
-    #     response = self.app.patch('/api/person/1', data=dumps(data))
-    #     assert 200 == response.status_code
-    #     # Check that the computer now has its `name` field set.
-    #     response = self.app.get('/api/computer/1')
-    #     assert 200 == response.status_code
-    #     assert 'foo' == loads(response.data)['name']
-    #     # Add a new computer by patching person
-    #     data = {'computers': [{'id': 1},
-    #                           {'name': 'iMac', 'vendor': 'Apple',
-    #                            'programs': [{'program':{'name':'iPhoto'}}]}]}
-    #     response = self.app.patch('/api/person/1', data=dumps(data))
-    #     assert 200 == response.status_code
-    #     response = self.app.get('/api/computer/2/programs')
-    #     programs = loads(response.data)['objects']
-    #     assert programs[0]['program']['name'] == 'iPhoto'
-    #     # Add a program to the computer through the person
-    #     data = {'computers': [{'id': 1},
-    #                           {'id': 2,
-    #                            'programs': [{'program_id': 1},
-    #                                         {'program':{'name':'iMovie'}}]}]}
-    #     response = self.app.patch('/api/person/1', data=dumps(data))
-    #     assert 200 == response.status_code
-    #     response = self.app.get('/api/computer/2/programs')
-    #     programs = loads(response.data)['objects']
-    #     assert programs[1]['program']['name'] == 'iMovie'
-
-    # TODO this is not required by the JSON API spec.
-    #
-    # def test_put_same_as_patch(self):
-    #     """Tests that :http:method:`put` requests are the same as
-    #     :http:method:`patch` requests.
-
-    #     """
-    #     # recreate the api to allow patch many at /api/v2/person
-    #     self.manager.create_api(self.Person, methods=['GET', 'POST', 'PUT'],
-    #                             allow_patch_many=True, url_prefix='/api/v2')
-
-    #     # Creating some people
-    #     self.app.post('/api/v2/person',
-    #                   data=dumps({'name': u'Lincoln', 'age': 23}))
-    #     self.app.post('/api/v2/person',
-    #                   data=dumps({'name': u'Lucy', 'age': 23}))
-    #     self.app.post('/api/v2/person',
-    #                   data=dumps({'name': u'Mary', 'age': 25}))
-
-    #     # change a single entry
-    #     resp = self.app.put('/api/v2/person/1', data=dumps({'age': 24}))
-    #     assert resp.status_code == 200
-
-    #     resp = self.app.get('/api/v2/person/1')
-    #     assert resp.status_code == 200
-    #     assert loads(resp.data)['age'] == 24
-
-    #     # Changing the birth date field of the entire collection
-    #     day, month, year = 15, 9, 1986
-    #     birth_date = date(year, month, day).strftime('%d/%m/%Y')  # iso8601
-    #     form = {'birth_date': birth_date}
-    #     self.app.put('/api/v2/person', data=dumps(form))
-
-    #     # Finally, testing if the change was made
-    #     response = self.app.get('/api/v2/person')
-    #     loaded = loads(response.data)['objects']
-    #     for i in loaded:
-    #         expected = '{0:4d}-{1:02d}-{2:02d}'.format(year, month, day)
-    #         assert i['birth_date'] == expected
-
-    # TODO no longer supported
-    #
-    # def test_patch_autodelete_submodel(self):
-    #     """Tests the automatic deletion of entries marked with the
-    #     ``__delete__`` flag on an update operation.
-
-    #     It also tests adding an already created instance as a related item.
-
-    #     """
-    #     # Creating all rows needed in our test
-    #     person_data = {'name': u'Lincoln', 'age': 23}
-    #     resp = self.app.post('/api/person', data=dumps(person_data))
-    #     assert resp.status_code == 201
-    #     comp_data = {'name': u'lixeiro', 'vendor': u'Lemote'}
-    #     resp = self.app.post('/api/computer', data=dumps(comp_data))
-    #     assert resp.status_code == 201
-
-    #     # updating person to add the computer
-    #     update_data = {'computers': {'add': [{'id': 1}]}}
-    #     self.app.patch('/api/person/1', data=dumps(update_data))
-
-    #     # Making sure that everything worked properly
-    #     resp = self.app.get('/api/person/1')
-    #     assert resp.status_code == 200
-    #     loaded = loads(resp.data)
-    #     assert len(loaded['computers']) == 1
-    #     assert loaded['computers'][0]['name'] == u'lixeiro'
-
-    #     # Now, let's remove it and delete it
-    #     update2_data = {
-    #         'computers': {
-    #             'remove': [
-    #                 {'id': 1, '__delete__': True},
-    #             ],
-    #         },
-    #     }
-    #     resp = self.app.patch('/api/person/1', data=dumps(update2_data))
-    #     assert resp.status_code == 200
-
-    #     # Testing to make sure it was removed from the related field
-    #     resp = self.app.get('/api/person/1')
-    #     assert resp.status_code == 200
-    #     loaded = loads(resp.data)
-    #     assert len(loaded['computers']) == 0
-
-    #     # Making sure it was removed from the database
-    #     resp = self.app.get('/api/computer/1')
-    #     assert resp.status_code == 404
-
     def test_to_one_related_resource_url(self):
         """Tests that attempting to update a to-one related resource URL
         (instead of a relationship URL) yields an error response.
@@ -1066,10 +931,23 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
             id = self.db.Column(self.db.Integer, primary_key=True)
             name = self.db.Column(self.db.Unicode)
 
+        class Parent(self.db.Model):
+            id = Column(Integer, primary_key=True)
+            children = relationship('Child', primaryjoin='and_(Parent.id==Child.parent_id,Child.invisible==0)')
+
+        class Child(self.db.Model):
+            id = Column(Integer, primary_key=True)
+            parent_id = self.db.Column(self.db.Integer, ForeignKey('parent.id'))
+            invisible = self.db.Column(self.db.Boolean)
+
         self.Person = Person
+        self.Parent = Parent
+        self.Child = Child
         self.db.create_all()
         self.manager = APIManager(self.flaskapp, session=self.db.session)
         self.manager.create_api(self.Person, methods=['PATCH'])
+        self.manager.create_api(self.Parent)
+        self.manager.create_api(self.Child)
 
     def test_create(self):
         """Tests for creating a resource."""
@@ -1088,3 +966,11 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         response = self.app.patch('/api/person/1', data=dumps(data))
         assert response.status_code == 204
         assert person.name == 'bar'
+
+    def test_collection(self):
+        self.session.add(self.Parent(id=1))
+        self.session.add(self.Child(id=1, parent_id=1))
+        self.session.commit()
+
+        response = self.app.get('/api/parent')
+        assert response.status_code == 200

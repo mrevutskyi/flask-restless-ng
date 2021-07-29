@@ -22,7 +22,6 @@ from typing import Optional
 from uuid import uuid1
 
 from flask import Blueprint
-from werkzeug.urls import url_quote_plus
 
 from . import registry
 from .helpers import get_model
