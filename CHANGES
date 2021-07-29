@@ -4,6 +4,11 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.2.2
+-------------
+- Fix an incorrect selectinload query for models with custom select queries
+
+
 Version 2.2.1
 -------------
 - Minor improvements and fixes
