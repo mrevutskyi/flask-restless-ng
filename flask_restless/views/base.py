@@ -1042,9 +1042,24 @@ class FetchView(View):
             serializer: Serializer,
             filters=None
     ) -> Query:
+
+        def is_unsafe_to_selectload(model, path):
+            # SQLAlchemy does not build correct `selectinload` queries for models that have special select join
+            # I can not reproduce this issue with SQLite so for now disabling until we know that special select is not being used
+            # and for now I was only able to figure it for flask_sqlalchemy
+            # Will need to do more testing on an actual MySQL DB
+            related_model = get_related_model(model, path)
+            if not hasattr(related_model, 'query'):
+                return True
+            if related_model.query.whereclause is not None:
+                return True
+            return False
+
         join_paths = {path.split('.')[0] for path in include}
 
         for path in join_paths:
+            if is_unsafe_to_selectload(self.model, path):
+                continue
             attribute = getattr(self.model, path)
             if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 query = query.options(selectinload(attribute))
@@ -1057,6 +1072,8 @@ class FetchView(View):
             relationship_columns -= serializer.many_to_one_relationships
 
         for path in relationship_columns:
+            if is_unsafe_to_selectload(self.model, path):
+                continue
             attribute = getattr(self.model, path)
             if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 options = selectinload(attribute)
@@ -1065,12 +1082,6 @@ class FetchView(View):
                 if not filters:
                     try:
                         related_model = get_related_model(self.model, path)
-                        # SQLAlchemy does not build correct `selectinload` queries for models that have special select join
-                        # I can not reproduce this issue with SQLite so for now disabling until we know that special select is not being used
-                        # and for now I was only able to figure it for flask_sqlalchemy
-                        # Will need to do more testing on an actual MySQL DB
-                        if not hasattr(related_model, 'query') or related_model.query.whereclause is not None:
-                            continue
                         pk = self.api_manager.primary_key_for(related_model)
                         options = options.options(load_only(pk))
                     except KeyError:
