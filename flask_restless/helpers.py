@@ -34,7 +34,6 @@ from sqlalchemy.orm import RelationshipProperty as RelProperty
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.sql import func
-from sqlalchemy.sql.expression import ColumnElement
 
 try:
     # SQLAlchemy 1.3+
@@ -166,11 +165,9 @@ def has_field(model, fieldname):
     return hasattr(model, fieldname)
 
 
-def get_field_type(model, fieldname):
+def get_field_type(model, field_name: str):
     """Helper which returns the SQLAlchemy type of the field."""
-    field = getattr(model, fieldname)
-    if isinstance(field, ColumnElement):
-        return field.type
+    field = getattr(model, field_name)
     if isinstance(field, AssociationProxyType):
         field = field.remote_attr
     if hasattr(field, 'property'):
@@ -215,7 +212,7 @@ def is_like_list(instance, relation):
     """
     if relation in instance._sa_class_manager:
         return instance._sa_class_manager[relation].property.uselist
-    elif hasattr(instance, relation):
+    if hasattr(instance, relation):
         attr = getattr(instance._sa_instance_state.class_, relation)
         if hasattr(attr, 'property'):
             return attr.property.uselist
@@ -345,9 +342,16 @@ def strings_to_datetimes(model, dictionary):
     This function outputs a new dictionary; it does not modify the argument.
 
     """
-    return {k: string_to_datetime(model, k, v) for k, v in dictionary.items() if k not in ('type', 'links')}
+    return {k: string_to_datetime(model, k, v) for k, v in dictionary.items() if k not in {'type', 'links'}}
 
 
-def get_model(instance):
+def get_model(instance) -> type:
     """Returns the model class of which the specified object is an instance."""
     return type(instance)
+
+
+def get_column_name(column) -> str:
+    """Retrieves a column name from a column attribute of SQLAlchemy model class, or a string."""
+    if hasattr(column, 'key'):
+        return column.key
+    return column

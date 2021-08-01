@@ -14,7 +14,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 
 from flask_restless import APIManager
@@ -30,14 +29,13 @@ class Article(Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode)
     author_id = Column(Integer, ForeignKey('person.pk'))
-    author = relationship('Person')
+    comments = relationship('Comment', backref='article')
 
 
 class Comment(Base):
     __tablename__ = 'comment'
     id = Column(Integer, primary_key=True)
     article_id = Column(Integer, ForeignKey('article.id'))
-    article = relationship(Article, backref=backref('comments'))
 
 
 class Person(Base):
@@ -46,7 +44,7 @@ class Person(Base):
     name = Column(Unicode)
     age = Column(Integer)
     other = Column(Float)
-    articles = relationship('Article')
+    articles = relationship('Article', backref='author')
 
 
 class Parent(Base):

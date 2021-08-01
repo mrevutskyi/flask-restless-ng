@@ -20,8 +20,6 @@ class Article(Base):
     id = Column(Integer, primary_key=True)
     author_id = Column(Integer, ForeignKey('person.id'))
 
-    author = relationship('Person')
-
 
 class Comment(Base):
     __tablename__ = 'comment'
@@ -37,7 +35,7 @@ class Person(Base):
     __tablename__ = 'person'
     id = Column(Integer, primary_key=True)
     name = Column(Unicode)
-    articles = relationship('Article')
+    articles = relationship('Article', backref='author')
 
 
 class TestInclusion(BaseTestClass):

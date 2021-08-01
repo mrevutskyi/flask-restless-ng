@@ -93,7 +93,6 @@ class TestCreating(ManagerTestBase):
             id = Column(Integer, primary_key=True)
             date_created = Column(Date)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
 
         class Person(self.Base):
             __tablename__ = 'person'
@@ -103,7 +102,7 @@ class TestCreating(ManagerTestBase):
             birth_datetime = Column(DateTime, nullable=True)
             bedtime = Column(Time)
             hangtime = Column(Interval)
-            articles = relationship('Article')
+            articles = relationship('Article', backref='author')
 
             @hybrid_property
             def is_minor(self):

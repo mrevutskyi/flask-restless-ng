@@ -10,7 +10,6 @@
 # License version 3 and under the 3-clause BSD license. For more
 # information, see LICENSE.AGPL and LICENSE.BSD.
 """Unit tests for the :mod:`flask_restless.manager` module."""
-
 from flask import Flask
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey

@@ -512,9 +512,6 @@ class APIManager:
         if only is not None and exclude is not None:
             msg = 'Cannot simultaneously specify both `only` and `exclude`'
             raise IllegalArgumentError(msg)
-        if not hasattr(model, 'id') and len(primary_key_names(model)) == 0:
-            msg = 'Provided model must have an `id` attribute or a primary key'
-            raise IllegalArgumentError(msg)
         if collection_name == '':
             msg = 'Collection name must be nonempty'
             raise IllegalArgumentError(msg)
@@ -547,10 +544,7 @@ class APIManager:
         # find the primary_key of the model or try and use 'id'
         if primary_key is None:
             pk_names = primary_key_names(model)
-            if len(pk_names) > 0:
-                primary_key = pk_names[0]
-            else:
-                primary_key = 'id'
+            primary_key = pk_names[0]
 
         # Create a default serializer and deserializer if none have been
         # provided.

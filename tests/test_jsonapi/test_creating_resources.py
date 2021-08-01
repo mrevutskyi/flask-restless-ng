@@ -14,7 +14,7 @@
 The tests in this module correspond to the `Creating Resources`_ section
 of the JSON API specification.
 
-.. _Creating Resources: http://jsonapi.org/format/#crud-creating
+.. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
 """
 import uuid
@@ -35,7 +35,7 @@ class TestCreatingResources(ManagerTestBase):
     """Tests corresponding to the `Creating Resources`_ section of the JSON API
     specification.
 
-    .. _Creating Resources: http://jsonapi.org/format/#crud-creating
+    .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
     """
 
@@ -48,6 +48,8 @@ class TestCreatingResources(ManagerTestBase):
         """
         super(TestCreatingResources, self).setUp()
 
+        GUID.cache_ok = True
+
         class Article(self.Base):
             __tablename__ = 'article'
             id = Column(GUID, primary_key=True)
@@ -56,14 +58,13 @@ class TestCreatingResources(ManagerTestBase):
             __tablename__ = 'comment'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
+            author = relationship('Person', backref='comments')
 
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
             name = Column(Unicode)
             age = Column(Integer)
-            comments = relationship('Comment')
 
         self.Article = Article
         self.Comment = Comment
@@ -85,7 +86,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Sparse Fieldsets`_ section
         of the JSON API specification.
 
-        .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+        .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
         """
         data = {'data':
                     {'type': 'person',
@@ -114,7 +115,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Inclusion of Related Resources`_
         section of the JSON API specification.
 
-        .. _Inclusion of Related Resources: http://jsonapi.org/format/#fetching-includes
+        .. _Inclusion of Related Resources: https://jsonapi.org/format/#fetching-includes
 
         """
         comment = self.Comment(id=1)
@@ -147,7 +148,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Creating Resources`_ section of the JSON
         API specification.
 
-        .. _Creating Resources: http://jsonapi.org/format/#crud-creating
+        .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
         """
         data = dict(data=dict(type='person', name='foo'))
@@ -174,7 +175,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Creating Resources`_ section of the JSON
         API specification.
 
-        .. _Creating Resources: http://jsonapi.org/format/#crud-creating
+        .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
         """
         data = dict(data=dict(name='foo'))
@@ -190,7 +191,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Client-Generated IDs`_ section of the
         JSON API specification.
 
-        .. _Client-Generated IDs: http://jsonapi.org/format/#crud-creating-client-ids
+        .. _Client-Generated IDs: https://jsonapi.org/format/#crud-creating-client-ids
 
         """
         generated_id = uuid.uuid1()
@@ -213,7 +214,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `Client-Generated IDs`_ section of the
         JSON API specification.
 
-        .. _Client-Generated IDs: http://jsonapi.org/format/#crud-creating-client-ids
+        .. _Client-Generated IDs: https://jsonapi.org/format/#crud-creating-client-ids
 
         """
         self.manager.create_api(self.Article, url_prefix='/api2',
@@ -231,7 +232,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `409 Conflict`_ section of the JSON API
         specification.
 
-        .. _409 Conflict: http://jsonapi.org/format/#crud-creating-responses-409
+        .. _409 Conflict: https://jsonapi.org/format/#crud-creating-responses-409
 
         """
 
@@ -248,7 +249,7 @@ class TestCreatingResources(ManagerTestBase):
         For more information, see the `409 Conflict`_ section of the JSON API
         specification.
 
-        .. _409 Conflict: http://jsonapi.org/format/#crud-creating-responses-409
+        .. _409 Conflict: https://jsonapi.org/format/#crud-creating-responses-409
 
         """
         generated_id = uuid.uuid1()

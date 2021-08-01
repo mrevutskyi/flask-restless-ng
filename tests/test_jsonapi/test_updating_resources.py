@@ -54,21 +54,19 @@ class TestUpdatingResources(ManagerTestBase):
             __tablename__ = 'article'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
+            author = relationship('Person', backref='articles')
 
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
             name = Column(Unicode, unique=True)
             age = Column(Integer)
-            articles = relationship('Article')
 
         class Tag(self.Base):
             __tablename__ = 'tag'
             id = Column(Integer, primary_key=True)
             name = Column(Unicode)
-            updated_at = Column(DateTime, server_default=func.now(),
-                                onupdate=func.current_timestamp())
+            updated_at = Column(DateTime, server_default=func.now(), onupdate=func.current_timestamp())
 
         self.Article = Article
         self.Person = Person

@@ -8,7 +8,6 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
@@ -31,11 +30,11 @@ class Client(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(64))
 
-    orders = relationship('Order', backref=backref('client'), primaryjoin='and_(Client.id==Order.client_id, Order.archived==0)')
+    orders = relationship('Order', backref='client', primaryjoin='and_(Client.id==Order.client_id, Order.archived==0)')
     starred_orders = relationship("Order",
                                   secondary='starred_orders',
                                   primaryjoin='and_(Client.id==starred_orders.c.client_id, Order.archived==0)')
-    all_orders = relationship('Order')
+    all_orders = relationship('Order', viewonly=True)
 
 
 class Order(Base):

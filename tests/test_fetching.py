@@ -517,13 +517,12 @@ class TestServerSparseFieldsets(ManagerTestBase):
             title = Column(Unicode)
             author_id = Column(Integer, ForeignKey('person.id'))
             author = relationship(Person, backref=backref('articles'))
-            comments = relationship('Comment')
+            comments = relationship('Comment', backref='article')
 
         class Comment(self.Base):
             __tablename__ = 'comment'
             id = Column(Integer, primary_key=True)
             article_id = Column(Integer, ForeignKey('article.id'))
-            article = relationship(Article)
 
         class Photo(self.Base):
             __tablename__ = 'photo'
@@ -729,13 +728,12 @@ class TestProcessors(ManagerTestBase):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
             name = Column(Unicode)
-            articles = relationship('Article')
+            articles = relationship('Article', backref='author')
 
         class Article(self.Base):
             __tablename__ = 'article'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship(Person)
 
         self.Article = Article
         self.Person = Person
@@ -1193,12 +1191,11 @@ class TestDynamicRelationships(ManagerTestBase):
             __tablename__ = 'article'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
 
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
-            articles = relationship(Article, lazy='joined')
+            articles = relationship(Article, lazy='joined', backref='author')
 
         self.Article = Article
         self.Person = Person

@@ -35,13 +35,13 @@ from typing import Optional
 from urllib.parse import urljoin
 
 from flask import request
-from sqlalchemy import Column
 from sqlalchemy import inspect
 from sqlalchemy.orm.base import MANYTOONE
 
 from .helpers import attribute_columns
 from .helpers import foreign_keys
 from .helpers import get_by
+from .helpers import get_column_name
 from .helpers import get_related_model
 from .helpers import get_relations
 from .helpers import has_field
@@ -254,24 +254,6 @@ class MissingType(MissingInformation):
 
     """
     element = 'type'
-
-
-def get_column_name(column):
-    """Retrieve a column name from a column attribute of SQLAlchemy model
-    class, or a string.
-
-    Raises `TypeError` when argument does not fall into either of those
-    options.
-
-    """
-    # TODO use inspection API here
-    if hasattr(column, '__clause_element__'):
-        clause_element = column.__clause_element__()
-        if not isinstance(clause_element, Column):
-            msg = 'Expected a column attribute of a SQLAlchemy ORM class'
-            raise TypeError(msg)
-        return clause_element.key
-    return column
 
 
 class Serializer(ABC):

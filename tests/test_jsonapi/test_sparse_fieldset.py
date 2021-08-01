@@ -24,14 +24,13 @@ class TestSparseFieldsets(ManagerTestBase):
             id = Column(Integer, primary_key=True)
             title = Column(Unicode)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
 
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
             name = Column(Unicode)
             age = Column(Integer)
-            articles = relationship('Article')
+            articles = relationship('Article', backref='author')
 
         self.Article = Article
         self.Person = Person

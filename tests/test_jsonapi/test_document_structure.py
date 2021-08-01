@@ -52,19 +52,17 @@ class TestDocumentStructure(ManagerTestBase):
             __tablename__ = 'article'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
+            author = relationship('Person', backref='articles')
 
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
-            articles = relationship(Article)
-            comments = relationship('Comment')
 
         class Comment(self.Base):
             __tablename__ = 'comment'
             id = Column(Integer, primary_key=True)
             author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person')
+            author = relationship('Person', backref='comments')
 
         self.Article = Article
         self.Comment = Comment

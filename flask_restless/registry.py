@@ -23,7 +23,3 @@ _registry: Dict[Model, APIInfo] = {}
 
 def add(model: Model, api_info: APIInfo):
     _registry[model] = api_info
-
-
-def get(model: Model):
-    return _registry[model]
