@@ -6,6 +6,12 @@ from sqlalchemy.orm import sessionmaker
 from .helpers import validate_schema
 
 
+def pytest_configure(config):
+    # do not run integration tests by default
+    if not config.option.markexpr:
+        setattr(config.option, 'markexpr', 'not integration')
+
+
 class BaseTestClass:
     """Base test class that contains required fixtures."""
 

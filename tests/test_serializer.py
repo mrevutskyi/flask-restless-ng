@@ -14,10 +14,11 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Time
 from sqlalchemy import Unicode
-from sqlalchemy.orm import DeclarativeMeta
-from sqlalchemy.orm import declarative_base
 
 from flask_restless.serialization import DefaultSerializer
+
+from .helpers import DeclarativeMeta
+from .helpers import declarative_base
 
 Base: DeclarativeMeta = declarative_base()  # type: ignore
 

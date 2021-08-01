@@ -10,6 +10,11 @@ mypy:
 test:
 	pytest tests/
 
+integration:
+	docker start mariadb_10_5
+	pytest -m integration
+	docker stop mariadb_10_5
+
 check: isort flake8 mypy test
 
 package:

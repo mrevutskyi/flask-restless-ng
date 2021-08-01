@@ -34,12 +34,14 @@ from flask import json
 from flask import request
 from flask.views import MethodView
 from flask.views import View
+from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import load_only
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.dynamic import DynamicAttributeImpl
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import false as FALSE
+from sqlalchemy.sql.elements import BinaryExpression
 from werkzeug.exceptions import HTTPException
 from werkzeug.http import parse_options_header
 
@@ -1043,24 +1045,21 @@ class FetchView(View):
             filters=None
     ) -> Query:
 
-        def is_unsafe_to_selectload(model, path):
+        def is_unsafe_to_selectload(attribute):
             # SQLAlchemy does not build correct `selectinload` queries for models that have special select join
-            # I can not reproduce this issue with SQLite so for now disabling until we know that special select is not being used
-            # and for now I was only able to figure it for flask_sqlalchemy
-            # Will need to do more testing on an actual MySQL DB
-            related_model = get_related_model(model, path)
-            if not hasattr(related_model, 'query'):
-                return True
-            if related_model.query.whereclause is not None:
-                return True
-            return False
+            try:
+                inspected_relationship = inspect(attribute)
+                if not isinstance(inspected_relationship.property.primaryjoin, BinaryExpression):
+                    return True
+            except Exception:
+                return False
 
         join_paths = {path.split('.')[0] for path in include}
 
         for path in join_paths:
-            if is_unsafe_to_selectload(self.model, path):
-                continue
             attribute = getattr(self.model, path)
+            if is_unsafe_to_selectload(attribute):
+                continue
             if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 query = query.options(selectinload(attribute))
 
@@ -1072,9 +1071,9 @@ class FetchView(View):
             relationship_columns -= serializer.many_to_one_relationships
 
         for path in relationship_columns:
-            if is_unsafe_to_selectload(self.model, path):
-                continue
             attribute = getattr(self.model, path)
+            if is_unsafe_to_selectload(attribute):
+                continue
             if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 options = selectinload(attribute)
 

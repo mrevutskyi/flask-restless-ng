@@ -1318,8 +1318,9 @@ class TestAssociationProxy(ManagerTestBase):
         article = self.Article(id=1)
         tag = self.Tag(id=1)
         article.tags.append(tag)
-        self.session.add_all([article, tag])
-        self.session.commit()
+        with self.flaskapp.app_context():
+            self.session.add_all([article, tag])
+            self.session.commit()
         response = self.app.get('/api/article/1')
         document = loads(response.data)
         article = document['data']
