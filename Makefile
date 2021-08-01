@@ -15,7 +15,12 @@ integration:
 	pytest -m integration
 	docker stop mariadb_10_5
 
-check: isort flake8 mypy test
+check: isort flake8 mypy tox integration
 
 package:
 	python3 setup.py sdist bdist_wheel
+
+tox:
+	tox
+
+release: check package
