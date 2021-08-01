@@ -48,8 +48,6 @@ class TestCreatingResources(ManagerTestBase):
         """
         super(TestCreatingResources, self).setUp()
 
-        GUID.cache_ok = True
-
         class Article(self.Base):
             __tablename__ = 'article'
             id = Column(GUID, primary_key=True)

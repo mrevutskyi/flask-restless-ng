@@ -176,6 +176,7 @@ class GUID(TypeDecorator):
 
     """
     impl = CHAR
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         descriptor = UUID() if dialect.name == 'postgresql' else CHAR(32)
