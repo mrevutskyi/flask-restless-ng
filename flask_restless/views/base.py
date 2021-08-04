@@ -1005,6 +1005,8 @@ class FetchView(View):
 
         try:
             return self.get_data(*args, include=include, **kwargs)
+        except BadRequest as e:
+            return error_response(e.http_code, detail=e.details)
         except Error as e:
             return error_response(e.http_code, cause=e.cause, detail=e.details)
         except MultipleExceptions as e:

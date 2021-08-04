@@ -467,7 +467,7 @@ class TestFiltering(SearchTestBase):
         """Tests that an invalid ``name`` element causes an error."""
         filters = [dict(name='bogus__field', op='eq', val='whatever')]
         response = self.search('/api/person', filters)
-        check_sole_error(response, 400, ['No such field', 'bogus__field'])
+        check_sole_error(response, 400, ['Invalid filter object: No such field', 'bogus__field'])
 
     def test_search_boolean_formula(self):
         """Tests for Boolean formulas of filters in a search query."""
