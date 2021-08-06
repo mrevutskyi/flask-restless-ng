@@ -4,6 +4,13 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.2.4
+-------------
+- Do not log exceptions for user related errors (bad query, etc)
+- Update safe check for `selectinload` for `includes
+- Update SQLAlchemy dependency to 1.3.6+
+
+
 Version 2.2.3
 -------------
 - Add safe check for `selectinload` for `includes`
