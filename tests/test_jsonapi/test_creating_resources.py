@@ -27,8 +27,6 @@ from sqlalchemy.orm import relationship
 
 from ..helpers import GUID
 from ..helpers import ManagerTestBase
-from ..helpers import dumps
-from ..helpers import loads
 
 
 class TestCreatingResources(ManagerTestBase):
@@ -94,9 +92,9 @@ class TestCreatingResources(ManagerTestBase):
                      }
                 }
         query_string = {'fields[person]': 'name'}
-        response = self.app.post('/api/person', data=dumps(data),
+        response = self.app.post('/api/person', json=data,
                                  query_string=query_string)
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         # ID and type must always be included.
         assert ['attributes', 'id', 'type'] == sorted(person)
@@ -130,10 +128,9 @@ class TestCreatingResources(ManagerTestBase):
                      }
                 }
         query_string = dict(include='comments')
-        response = self.app.post('/api/person', data=dumps(data),
-                                 query_string=query_string)
+        response = self.app.post('/api/person', json=data, query_string=query_string)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         included = document['included']
         assert len(included) == 1
         comment = included[0]
@@ -150,7 +147,7 @@ class TestCreatingResources(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', name='foo'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
         location = response.headers['Location']
         # TODO Technically, this test shouldn't know beforehand where the
@@ -158,7 +155,7 @@ class TestCreatingResources(ManagerTestBase):
         # here, assuming that the implementation of the server creates a new
         # Person object with ID 1, which is bad style.
         assert location.endswith('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['type'] == 'person'
         assert person['id'] == '1'
@@ -177,7 +174,7 @@ class TestCreatingResources(ManagerTestBase):
 
         """
         data = dict(data=dict(name='foo'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         # TODO test for error details (for example, a message specifying that
         # type is missing)
@@ -194,13 +191,13 @@ class TestCreatingResources(ManagerTestBase):
         """
         generated_id = uuid.uuid1()
         data = dict(data=dict(type='article', id=generated_id))
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         # Our server always responds with 201 when a client-generated ID is
         # specified. It does not return a 204.
         #
         # TODO should we reverse that and only return 204?
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         assert article['type'] == 'article'
         assert article['id'] == str(generated_id)
@@ -218,7 +215,7 @@ class TestCreatingResources(ManagerTestBase):
         self.manager.create_api(self.Article, url_prefix='/api2',
                                 methods=['POST'])
         data = dict(data=dict(type='article', id=uuid.uuid1()))
-        response = self.app.post('/api2/article', data=dumps(data))
+        response = self.app.post('/api2/article', json=data)
         assert response.status_code == 403
         # TODO test for error details (for example, a message specifying that
         # client-generated IDs are not allowed).
@@ -235,7 +232,7 @@ class TestCreatingResources(ManagerTestBase):
         """
 
         data = dict(data=dict(type='bogustype', name='foo'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 409
         # TODO test for error details (for example, a message specifying that
         # client-generated IDs are not allowed).
@@ -254,7 +251,7 @@ class TestCreatingResources(ManagerTestBase):
         self.session.add(self.Article(id=generated_id))
         self.session.commit()
         data = dict(data=dict(type='article', id=generated_id))
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         assert response.status_code == 409
         # TODO test for error details (for example, a message specifying that
         # client-generated IDs are not allowed).

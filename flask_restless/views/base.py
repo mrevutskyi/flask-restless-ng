@@ -445,7 +445,7 @@ def catch_integrity_errors(session):
                 return func(*args, **kw)
             # This should include: DataError, IntegrityError,
             # ProgrammingError, FlushError, OperationalError,
-            # InalidRequestError, and any other SQLAlchemyError
+            # InvalidRequestError, and any other SQLAlchemyError
             # subclass.
             except SQLAlchemyError as exception:
                 session.rollback()
@@ -453,8 +453,7 @@ def catch_integrity_errors(session):
                 status = 409 if is_conflict(exception) else 400
                 detail = str(exception)
                 title = un_camel_case(exception.__class__.__name__)
-                return error_response(status, cause=exception, detail=detail,
-                                      title=title)
+                return error_response(status, detail=detail, title=title)
         return wrapped
     return decorated
 
