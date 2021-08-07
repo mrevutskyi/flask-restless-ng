@@ -11,8 +11,7 @@
 # information, see LICENSE.AGPL and LICENSE.BSD.
 """Flask-Restless-NG is a `Flask`_ extension that provides simple
 generation of ReSTful APIs that satisfy the `JSON API`_ specification
-given database models defined using `SQLAlchemy`_ (or
-`Flask-SQLAlchemy`_).
+given database models defined using `SQLAlchemy`_ (or `Flask-SQLAlchemy`_).
 
 For more information, see the `documentation`_, `pypi`_, or the `source
 code`_ repository.
