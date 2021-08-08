@@ -29,8 +29,6 @@ from flask_restless import ProcessingException
 
 from .helpers import FlaskSQLAlchemyTestBase
 from .helpers import ManagerTestBase
-from .helpers import dumps
-from .helpers import loads
 
 
 class TestDeleting(ManagerTestBase):
@@ -86,7 +84,7 @@ class TestDeleting(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=dict(type='person', id=1))
-        response = self.app.delete('/api/article/1/author', data=dumps(data))
+        response = self.app.delete('/api/article/1/author', json=data)
         assert response.status_code == 405
         # TODO check error message here
         assert article.author is person
@@ -194,7 +192,7 @@ class TestProcessors(ManagerTestBase):
                                 preprocessors=preprocessors)
         response = self.app.delete('/api/person/1')
         assert response.status_code == 403
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         assert len(errors) == 1
         error = errors[0]

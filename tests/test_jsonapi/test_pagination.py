@@ -11,7 +11,7 @@ class TestPagination(ManagerTestBase):
     For more information, see the `Pagination`_ section of the JSON API
     specification.
 
-    .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+    .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
     """
 
@@ -32,7 +32,7 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Top Level`_ section of the JSON
         API specification.
 
-        .. _Top Level: http://jsonapi.org/format/#document-top-level
+        .. _Top Level: https://jsonapi.org/format/#document-top-level
 
         """
         response = self.app.get('/api/person')
@@ -51,11 +51,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
         self.session.commit()
         response = self.app.get('/api/person')
         document = response.json
@@ -77,11 +76,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
         self.session.commit()
         query_string = {'page[number]': 2, 'page[size]': 3}
         response = self.app.get('/api/person', query_string=query_string)
@@ -105,11 +103,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
         self.session.commit()
         query_string = {'page[number]': 2}
         response = self.app.get('/api/person', query_string=query_string)
@@ -132,11 +129,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(40)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person(id=i) for i in range(1, 41)])
         self.session.commit()
         query_string = {'sort': '-id', 'page[number]': 2}
         response = self.app.get('/api/person', query_string=query_string)
@@ -174,11 +170,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         query_string = {'page[size]': 5}
         response = self.app.get('/api/person', query_string=query_string)
@@ -201,11 +196,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         query_string = {'page[number]': 3}
         response = self.app.get('/api/person', query_string=query_string)
@@ -227,11 +221,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         self.manager.create_api(self.Person, url_prefix='/api2', page_size=5)
         query_string = {'page[number]': 3}
@@ -255,11 +248,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         self.manager.create_api(self.Person, url_prefix='/api2', page_size=0)
         response = self.app.get('/api2/person')
@@ -279,11 +271,10 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         self.manager.create_api(self.Person, url_prefix='/api2', page_size=0)
         query_string = {'page[number]': 2}
@@ -304,7 +295,7 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
         people = [self.Person() for _ in range(25)]
@@ -323,7 +314,7 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
         query_string = {'page[size]': -1}
@@ -337,7 +328,7 @@ class TestPagination(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON API
         specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
         query_string = {'page[number]': -1}
@@ -352,8 +343,7 @@ class TestPagination(ManagerTestBase):
         other pagination test methods anyway.)
 
         """
-        people = [self.Person() for i in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([self.Person() for _ in range(25)])
         self.session.commit()
         query_string = {'page[number]': 4, 'page[size]': 3}
         response = self.app.get('/api/person', query_string=query_string)

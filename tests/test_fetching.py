@@ -35,7 +35,6 @@ from .helpers import FlaskSQLAlchemyTestBase
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
 from .helpers import dumps
-from .helpers import loads
 
 
 class TestFetchCollection(ManagerTestBase):
@@ -72,9 +71,9 @@ class TestFetchCollection(ManagerTestBase):
 
     def test_wrong_accept_header(self):
 
-        """Tests that if a client specifies only :http:header:`Accept`
+        """Tests that if a client specifies only :https:header:`Accept`
         headers with non-JSON API media types, then the server responds
-        with a :http:status:`406`.
+        with a :https:status:`406`.
 
         """
         headers = {'Accept': 'application/json'}
@@ -92,7 +91,7 @@ class TestFetchCollection(ManagerTestBase):
         self.session.add_all([comment1, comment2])
         self.session.commit()
         response = self.app.get('/api/comment')
-        document = loads(response.data)
+        document = response.json
         comments = document['data']
         assert ['1'] == sorted(comment['id'] for comment in comments)
 
@@ -107,7 +106,7 @@ class TestFetchCollection(ManagerTestBase):
         self.manager.create_api(self.Person, collection_name='people')
         response = self.app.get('/api/people')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 1
         person = people[0]
@@ -122,7 +121,7 @@ class TestFetchCollection(ManagerTestBase):
         base_url = '/api/person'
         response = self.app.get(base_url)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         pagination = document['links']
         base_url = f'{base_url}?'
         assert base_url in pagination['first']
@@ -133,7 +132,7 @@ class TestFetchCollection(ManagerTestBase):
         assert pagination['next'] is None
 
     def test_link_headers_empty_collection(self):
-        """Tests that :http:header:`Link` headers work correctly for an
+        """Tests that :https:header:`Link` headers work correctly for an
         empty collection.
 
         """
@@ -167,7 +166,7 @@ class TestFetchCollection(ManagerTestBase):
         base_url = '/api/person'
         response = self.app.get(base_url, query_string=query_string)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         pagination = document['links']
         base_url = '{0}?'.format(base_url)
         # There are no previous and next links in this case, so we only
@@ -191,12 +190,11 @@ class TestFetchCollection(ManagerTestBase):
         query_string = {'sort': 'name'}
         response = self.app.get('/api/person', query_string=query_string)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 4
         person_ids = list(map(itemgetter('id'), people))
         assert ['3', '2'] == person_ids[-2:]
-        # TODO In Python 2.7 or later, this should be a set literal.
         assert {'1', '4'} == set(person_ids[:2])
 
 
@@ -205,26 +203,13 @@ class TestFetchResource(ManagerTestBase):
     def setUp(self):
         super(TestFetchResource, self).setUp()
 
-        # class Article(self.Base):
-        #     __tablename__ = 'article'
-        #     id = Column(Integer, primary_key=True)
-        #     title = Column(Unicode, primary_key=True)
-
         class Person(self.Base):
             __tablename__ = 'person'
             id = Column(Integer, primary_key=True)
 
-        # class Tag(self.Base):
-        #     __tablename__ = 'tag'
-        #     name = Column(Unicode, primary_key=True)
-
-        # self.Article = Article
         self.Person = Person
-        # self.Tag = Tag
         self.Base.metadata.create_all()
-        # self.manager.create_api(Article)
         self.manager.create_api(Person)
-        # self.manager.create_api(Tag)
 
     def test_collection_name(self):
         """Tests for fetching a single resource with an alternate collection
@@ -238,7 +223,7 @@ class TestFetchResource(ManagerTestBase):
                                 url_prefix='/api2')
         response = self.app.get('/api2/people/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['id'] == '1'
         assert person['type'] == 'people'
@@ -304,7 +289,7 @@ class TestFetchRelation(ManagerTestBase):
         For more information, see the `Pagination`_ section of the JSON
         API specification.
 
-        .. _Pagination: http://jsonapi.org/format/#fetching-pagination
+        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
         person = self.Person(id=1)
@@ -316,7 +301,7 @@ class TestFetchRelation(ManagerTestBase):
         params = {'page[number]': 3, 'page[size]': 2}
         base_url = '/api/person/1/articles'
         response = self.app.get(base_url, query_string=params)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert all(article['type'] == 'article' for article in articles)
         assert ['4', '5'] == sorted(article['id'] for article in articles)
@@ -344,7 +329,7 @@ class TestFetchRelation(ManagerTestBase):
         self.session.commit()
         params = {'sort': '-title'}
         response = self.app.get('/api/person/1/articles', query_string=params)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['c', 'b', 'a'] == [article['attributes']['title']
                                    for article in articles]
@@ -422,7 +407,7 @@ class TestFetchRelatedResource(ManagerTestBase):
         self.session.commit()
         response = self.app.get('/api/person/1/articles/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         assert article['id'] == '1'
         assert article['type'] == 'article'
@@ -552,7 +537,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, only=['name'])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert ['attributes', 'id', 'type'] == sorted(person)
         assert ['name'] == sorted(person['attributes'])
@@ -567,7 +552,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, only=['articles'])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert ['id', 'relationships', 'type'] == sorted(person)
         assert ['articles'] == sorted(person['relationships'])
@@ -582,7 +567,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, only=[self.Person.name])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert ['attributes', 'id', 'type'] == sorted(person)
         assert ['name'] == sorted(person['attributes'])
@@ -598,7 +583,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, only=[])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert ['id', 'type'] == sorted(person)
 
@@ -613,7 +598,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, additional_attributes=['foo'])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['foo'] == 'bar'
 
@@ -633,7 +618,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.manager.create_api(self.Article, additional_attributes=['foo'])
         self.manager.create_api(self.Person)
         response = self.app.get('/api/article/1/author')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert 'foo' not in person['attributes']
 
@@ -647,7 +632,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Photo, additional_attributes=['website'])
         response = self.app.get('/api/photo/1')
-        document = loads(response.data)
+        document = response.json
         photo = document['data']
         assert photo['attributes']['website'] == 'example.com'
 
@@ -661,7 +646,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Photo, additional_attributes=['year'])
         response = self.app.get('/api/photo/1')
-        document = loads(response.data)
+        document = response.json
         photo = document['data']
         assert photo['attributes']['year'] == 2015
 
@@ -672,7 +657,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, exclude=['name'])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert 'name' not in person['attributes']
 
@@ -686,7 +671,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person, exclude=[self.Person.name])
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert 'name' not in person['attributes']
 
@@ -704,7 +689,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.manager.create_api(self.Person)
         self.manager.create_api(self.Comment)
         response = self.app.get('/api/article/1')
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         assert 'comments' not in article['relationships']
         author = article['relationships']['author']['data']
@@ -755,7 +740,7 @@ class TestProcessors(ManagerTestBase):
         self.manager.create_api(self.Person, preprocessors=preprocessors)
         response = self.app.get('/api/person/1')
         assert response.status_code == 403
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         assert len(errors) == 1
         error = errors[0]
@@ -840,7 +825,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/bogus/articles')
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert len(articles) == 1
         article = articles[0]
@@ -892,7 +877,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/bogus/relationships/articles')
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert len(articles) == 1
         article = articles[0]
@@ -944,7 +929,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/foo/bar')
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert len(articles) == 1
         article = articles[0]
@@ -996,7 +981,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/foo/articles/1')
-        document = loads(response.data)
+        document = response.json
         resource = document['data']
         assert 'article' == resource['type']
         assert '1' == resource['id']
@@ -1022,7 +1007,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/foo/bar/1')
-        document = loads(response.data)
+        document = response.json
         resource = document['data']
         assert 'article' == resource['type']
         assert '1' == resource['id']
@@ -1050,7 +1035,7 @@ class TestProcessors(ManagerTestBase):
         # Article has a URL.
         self.manager.create_api(self.Article)
         response = self.app.get('/api/person/foo/bar/baz')
-        document = loads(response.data)
+        document = response.json
         resource = document['data']
         assert 'article' == resource['type']
         assert '1' == resource['id']
@@ -1073,7 +1058,7 @@ class TestProcessors(ManagerTestBase):
         self.manager.create_api(self.Person, preprocessors=preprocessors)
         response = self.app.get('/api/person/0')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['id'] == '2'
         assert person['attributes']['name'] == 'foo'
@@ -1103,7 +1088,7 @@ class TestProcessors(ManagerTestBase):
         self.manager.create_api(self.Person, preprocessors=preprocessors)
         response = self.app.get('/api/person')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1'] == sorted(person['id'] for person in people)
 
@@ -1134,7 +1119,7 @@ class TestProcessors(ManagerTestBase):
         query = {'filter[objects]': dumps(filters)}
         response = self.app.get('/api/person', query_string=query)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1'] == sorted(person['id'] for person in people)
 
@@ -1216,7 +1201,7 @@ class TestDynamicRelationships(ManagerTestBase):
         self.session.add_all([person, article1, article2])
         self.session.commit()
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         articles = person['relationships']['articles']['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
@@ -1234,7 +1219,7 @@ class TestDynamicRelationships(ManagerTestBase):
         self.session.commit()
         response = self.app.get('/api/person/1/articles')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
         assert all(article['type'] == 'article' for article in articles)
@@ -1252,7 +1237,7 @@ class TestDynamicRelationships(ManagerTestBase):
         self.session.commit()
         response = self.app.get('/api/person/1/relationships/articles')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
         assert all(article['type'] == 'article' for article in articles)
@@ -1319,7 +1304,7 @@ class TestAssociationProxy(ManagerTestBase):
             self.session.add_all([article, tag])
             self.session.commit()
         response = self.app.get('/api/article/1')
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         tags = article['relationships']['tags']['data']
         assert ['1'] == sorted(tag['id'] for tag in tags)
@@ -1349,7 +1334,7 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         self.session.add(person)
         self.session.commit()
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['id'] == '1'
         assert person['type'] == 'person'
@@ -1361,6 +1346,6 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         self.session.add_all([person1, person2])
         self.session.commit()
         response = self.app.get('/api/person')
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1', '2'] == sorted(person['id'] for person in people)

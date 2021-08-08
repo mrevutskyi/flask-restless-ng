@@ -12,7 +12,7 @@ class TestSorting(ManagerTestBase):
     """Tests corresponding to the `Sorting`_ section of the JSON API
     specification.
 
-    .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+    .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
     """
 
@@ -45,7 +45,7 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
         person1 = self.Person(name=u'foo', age=20)
@@ -68,7 +68,7 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
         person1 = self.Person(name=u'foo', age=20)
@@ -90,14 +90,15 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person1 = self.Person(name=u'foo', age=99)
-        person2 = self.Person(name=u'bar', age=99)
-        person3 = self.Person(name=u'baz', age=80)
-        person4 = self.Person(name=u'xyzzy', age=80)
-        self.session.add_all([person1, person2, person3, person4])
+        self.session.bulk_save_objects([
+            self.Person(name=u'foo', age=99),
+            self.Person(name=u'bar', age=99),
+            self.Person(name=u'baz', age=80),
+            self.Person(name=u'xyz', age=80)
+        ])
         self.session.commit()
         # Sort by age, decreasing, then by name, increasing.
         query_string = {'sort': '-age,name'}
@@ -116,7 +117,7 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
         person1 = self.Person(age=20)
@@ -142,7 +143,7 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
         person1 = self.Person(age=2, name=u'd')
@@ -168,7 +169,7 @@ class TestSorting(ManagerTestBase):
         For more information, see the `Sorting`_ section of the JSON API
         specification.
 
-        .. _Sorting: http://jsonapi.org/format/#fetching-sorting
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
         person = self.Person(id=1)
@@ -182,5 +183,5 @@ class TestSorting(ManagerTestBase):
         document = response.json
         validate_schema(document)
         articles = document['data']
-        articleids = [article['id'] for article in articles]
-        assert ['4', '3', '2', '1', '0'] == articleids
+        article_ids = [article['id'] for article in articles]
+        assert ['4', '3', '2', '1', '0'] == article_ids

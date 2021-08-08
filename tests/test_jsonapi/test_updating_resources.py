@@ -15,7 +15,7 @@ specification.
 The tests in this module correspond to the `Updating Resources`_ section
 of the JSON API specification.
 
-.. _Updating Resources: http://jsonapi.org/format/#crud-updating
+.. _Updating Resources: https://jsonapi.org/format/#crud-updating
 
 """
 from operator import attrgetter
@@ -29,25 +29,17 @@ from sqlalchemy import func
 from sqlalchemy.orm import relationship
 
 from ..helpers import ManagerTestBase
-from ..helpers import dumps
-from ..helpers import loads
 
 
 class TestUpdatingResources(ManagerTestBase):
     """Tests corresponding to the `Updating Resources`_ section of the JSON API
     specification.
 
-    .. _Updating Resources: http://jsonapi.org/format/#crud-updating
+    .. _Updating Resources: https://jsonapi.org/format/#crud-updating
 
     """
 
     def setUp(self):
-        """Creates the database, the :class:`~flask.Flask` object, the
-        :class:`~flask_restless.manager.APIManager` for that application, and
-        creates the ReSTful API endpoints for the :class:`TestSupport.Person`
-        and :class:`TestSupport.Article` models.
-
-        """
         super(TestUpdatingResources, self).setUp()
 
         class Article(self.Base):
@@ -82,7 +74,7 @@ class TestUpdatingResources(ManagerTestBase):
         For more information, see the `Updating a Resource's Attributes`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's Attributes: http://jsonapi.org/format/#crud-updating-resource-attributes
+        .. _Updating a Resource's Attributes: https://jsonapi.org/format/#crud-updating-resource-attributes
 
         """
         person = self.Person(id=1, name=u'foo', age=10)
@@ -90,7 +82,7 @@ class TestUpdatingResources(ManagerTestBase):
         self.session.commit()
         data = dict(data=dict(type='person', id='1',
                               attributes=dict(name=u'bar')))
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.id == 1
         assert person.name == 'bar'
@@ -102,7 +94,7 @@ class TestUpdatingResources(ManagerTestBase):
         For more information, see the `Updating a Resource's To-One Relationships`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's To-One Relationships: http://jsonapi.org/format/#crud-updating-resource-to-one-relationships
+        .. _Updating a Resource's To-One Relationships: https://jsonapi.org/format/#crud-updating-resource-to-one-relationships
 
         """
         person1 = self.Person(id=1)
@@ -123,7 +115,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         assert response.status_code == 204
         assert article.author is person2
 
@@ -133,7 +125,7 @@ class TestUpdatingResources(ManagerTestBase):
         For more information, see the `Updating a Resource's To-One Relationships`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's To-One Relationships: http://jsonapi.org/format/#crud-updating-resource-to-one-relationships
+        .. _Updating a Resource's To-One Relationships: https://jsonapi.org/format/#crud-updating-resource-to-one-relationships
 
         """
         person = self.Person(id=1)
@@ -149,7 +141,7 @@ class TestUpdatingResources(ManagerTestBase):
                 'relationships': {'author': {'data': None}}
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         assert response.status_code == 204
         assert article.author is None
 
@@ -159,7 +151,7 @@ class TestUpdatingResources(ManagerTestBase):
         For more information, see the `Updating a Resource's To-Many Relationships`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's To-Many Relationships: http://jsonapi.org/format/#crud-updating-resource-to-many-relationships
+        .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
         person = self.Person(id=1)
@@ -184,7 +176,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         assert response.status_code == 204
         articles = sorted(person.articles, key=attrgetter('id'))
         assert [article1, article2] == articles
@@ -195,7 +187,7 @@ class TestUpdatingResources(ManagerTestBase):
         For more information, see the `Updating a Resource's To-Many Relationships`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's To-Many Relationships: http://jsonapi.org/format/#crud-updating-resource-to-many-relationships
+        .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
         person = self.Person(id=1)
@@ -218,19 +210,19 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         assert response.status_code == 204
         assert person.articles == []
 
     def test_to_many_forbidden(self):
-        """Tests that the client receives a :http:status:`403` if the server
+        """Tests that the client receives a :https:status:`403` if the server
         has been configured to disallow full replacement of a to-many
         relationship.
 
         For more information, see the `Updating a Resource's To-Many Relationships`_
         section of the JSON API specification.
 
-        .. _Updating a Resource's To-Many Relationships: http://jsonapi.org/format/#crud-updating-resource-to-many-relationships
+        .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
         person = self.Person(id=1)
@@ -243,59 +235,61 @@ class TestUpdatingResources(ManagerTestBase):
                 'relationships': {'articles': {'data': []}}
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 403
 
     def test_other_modifications(self):
         """Tests that if an update causes additional changes in the resource in
         ways other than those specified by the client, the response has status
-        :http:status:`200` and includes the updated resource.
+        :https:status:`200` and includes the updated resource.
 
         For more information, see the `200 OK`_ section of the JSON API
         specification.
 
-        .. _200 OK: http://jsonapi.org/format/#crud-updating-responses-200
+        .. _200 OK: https://jsonapi.org/format/#crud-updating-responses-200
 
         """
         tag = self.Tag(id=1)
         self.session.add(tag)
         self.session.commit()
-        data = {'data':
-                    {'type': 'tag',
-                     'id': '1',
-                     'attributes': {'name': u'foo'}}
-               }
-        response = self.app.patch('/api/tag/1', data=dumps(data))
+        data = {
+            'data': {
+                'type': 'tag',
+                'id': '1',
+                'attributes': {'name': u'foo'}
+            }
+        }
+        response = self.app.patch('/api/tag/1', json=data)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         tag1 = document['data']
         response = self.app.get('/api/tag/1')
-        document = loads(response.data)
+        document = response.json
         tag2 = document['data']
         assert tag1 == tag2
 
     def test_nonexistent(self):
         """Tests that an attempt to update a nonexistent resource causes a
-        :http:status:`404` response.
+        :https:status:`404` response.
 
         For more information, see the `404 Not Found`_ section of the JSON API
         specification.
 
-        .. _404 Not Found: http://jsonapi.org/format/#crud-updating-responses-404
+        .. _404 Not Found: https://jsonapi.org/format/#crud-updating-responses-404
 
         """
         data = dict(data=dict(type='person', id='1'))
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 404
 
     def test_nonexistent_relationship(self):
         """Tests that an attempt to update a nonexistent resource causes a
-        :http:status:`404` response.
+        :https:status:`404` response.
 
         For more information, see the `404 Not Found`_ section of the JSON API
         specification.
 
-        .. _404 Not Found: http://jsonapi.org/format/#crud-updating-responses-404
+        .. _404 Not Found: https://jsonapi.org/format/#crud-updating-responses-404
 
         """
         person = self.Person(id=1)
@@ -313,19 +307,19 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         assert response.status_code == 404
         # TODO test for error details
 
     def test_conflicting_attributes(self):
         """Tests that an attempt to update a resource with a non-unique
         attribute value where uniqueness is required causes a
-        :http:status:`409` response.
+        :https:status:`409` response.
 
         For more information, see the `409 Conflict`_ section of the JSON API
         specification.
 
-        .. _409 Conflict: http://jsonapi.org/format/#crud-updating-responses-409
+        .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
         person1 = self.Person(id=1, name=u'foo')
@@ -334,42 +328,42 @@ class TestUpdatingResources(ManagerTestBase):
         self.session.commit()
         data = dict(data=dict(type='person', id='2',
                               attributes=dict(name=u'foo')))
-        response = self.app.patch('/api/person/2', data=dumps(data))
+        response = self.app.patch('/api/person/2', json=data)
         assert response.status_code == 409
         # TODO test for error details
 
     def test_conflicting_type(self):
         """Tests that an attempt to update a resource with the wrong type
-        causes a :http:status:`409` response.
+        causes a :https:status:`409` response.
 
         For more information, see the `409 Conflict`_ section of the JSON API
         specification.
 
-        .. _409 Conflict: http://jsonapi.org/format/#crud-updating-responses-409
+        .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
         person = self.Person(id=1)
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='bogus', id='1'))
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 409
         # TODO test for error details
 
     def test_conflicting_id(self):
         """Tests that an attempt to update a resource with the wrong ID causes
-        a :http:status:`409` response.
+        a :https:status:`409` response.
 
         For more information, see the `409 Conflict`_ section of the JSON API
         specification.
 
-        .. _409 Conflict: http://jsonapi.org/format/#crud-updating-responses-409
+        .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
         person = self.Person(id=1)
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='person', id='bogus'))
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 409
         # TODO test for error details

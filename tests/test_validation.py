@@ -30,8 +30,6 @@ from sqlalchemy.orm import validates
 
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
-from .helpers import dumps
-from .helpers import loads
 
 # for SAValidation package on pypi.python.org
 try:
@@ -115,9 +113,9 @@ class TestSimpleValidation(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', age=1))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['age'] == 1
 
@@ -127,9 +125,9 @@ class TestSimpleValidation(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', age=-1))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()
@@ -151,7 +149,7 @@ class TestSimpleValidation(ManagerTestBase):
                      'attributes': {'age': 2}
                      }
                 }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.age == 2
 
@@ -169,7 +167,7 @@ class TestSimpleValidation(ManagerTestBase):
                      'attributes': {'age': -1}
                      }
                 }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         check_sole_error(response, 400, ['age', 'Must be between'])
         # Check that the person was not updated.
         assert person.age == 1
@@ -195,9 +193,9 @@ class TestSimpleValidation(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/comment/1', data=dumps(data))
+        response = self.app.patch('/api/comment/1', json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         assert len(errors) == 1
         error = errors[0]
@@ -217,9 +215,9 @@ class TestSimpleValidation(ManagerTestBase):
         self.session.commit()
         data = {'data': [{'type': 'article', 'id': 1}]}
         response = self.app.post('/api/person/1/relationships/articles',
-                                 data=dumps(data))
+                                 json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()
@@ -242,9 +240,9 @@ class TestSimpleValidation(ManagerTestBase):
                                 validation_exceptions=[CoolValidationError])
         data = {'data': [{'type': 'article', 'id': 1}]}
         response = self.app.patch('/api2/person/1/relationships/articles',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()
@@ -257,7 +255,7 @@ class TestSimpleValidation(ManagerTestBase):
 class TestSAValidation(ManagerTestBase):
     """Tests for validation errors raised by the ``savalidation`` package. For
     more information about this package, see `its PyPI page
-    <http://pypi.python.org/pypi/SAValidation>`_.
+    <https://pypi.python.org/pypi/SAValidation>`_.
 
     """
 
@@ -285,9 +283,9 @@ class TestSAValidation(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', email=u'example@example.com'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['email'] == u'example@example.com'
 
@@ -297,9 +295,9 @@ class TestSAValidation(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()
@@ -317,9 +315,9 @@ class TestSAValidation(ManagerTestBase):
                      'attributes': {'email': 'bogus'}
                      }
                 }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()
@@ -341,7 +339,7 @@ class TestSAValidation(ManagerTestBase):
                      'attributes': {'email': u'foo@example.com'}
                      }
                 }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.email == u'foo@example.com'
 
@@ -359,9 +357,9 @@ class TestSAValidation(ManagerTestBase):
                      'attributes': {'email': 'bogus'}
                      }
                 }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 400
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         error = errors[0]
         assert 'validation' in error['title'].lower()

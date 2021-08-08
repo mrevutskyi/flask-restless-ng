@@ -15,7 +15,7 @@ specification; for example, the :mod:`test_fetching_data` module
 corresponds to the `Fetching Data`_ section of the `JSON API`_
 specification.
 
-.. _JSON API: http://jsonapi.org
-.. _Fetching Data: http://jsonapi.org/format/#fetching
+.. _JSON API: https://jsonapi.org
+.. _Fetching Data: https://jsonapi.org/format/#fetching
 
 """

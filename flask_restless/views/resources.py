@@ -520,8 +520,7 @@ class API(APIBase):
             message = 'ID must be {0}, not {1}'.format(resource_id, id_)
             return error_response(409, detail=message)
         result = self._update_instance(instance, data, resource_id)
-        # If result is not None, that means there was an error updating the
-        # resource.
+        # If result is not None, that means there was an error updating the resource.
         if result is not None:
             return result
         # If we believe that the resource changes in ways other than the

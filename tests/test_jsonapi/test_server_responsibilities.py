@@ -15,9 +15,11 @@ according to the JSON API specification.
 The tests in this module correspond to the `Server Responsibilities`_
 section of the JSON API specification.
 
-.. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+.. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
 """
+import json
+
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
@@ -26,15 +28,13 @@ from flask_restless import CONTENT_TYPE
 
 from ..helpers import ManagerTestBase
 from ..helpers import check_sole_error
-from ..helpers import dumps
-from ..helpers import loads
 
 
 class TestServerResponsibilities(ManagerTestBase):
     """Tests corresponding to the `Server Responsibilities`_ section of
     the JSON API specification.
 
-    .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+    .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
     """
 
@@ -50,44 +50,44 @@ class TestServerResponsibilities(ManagerTestBase):
         self.manager.create_api(Person, methods=['GET', 'POST', 'PATCH', 'DELETE'])
 
     def test_get_content_type(self):
-        """"Tests that a response to a :http:method:`get` request has
+        """"Tests that a response to a :https:method:`get` request has
         the correct content type.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         response = self.app.get('/api/person')
         assert response.mimetype == CONTENT_TYPE
 
     def test_post_content_type(self):
-        """"Tests that a response to a :http:method:`post` request has
+        """"Tests that a response to a :https:method:`post` request has
         the correct content type.
 
         Our implementation of the JSON API specification always responds
-        to a :http:method:`post` request with a representation of the
+        to a :https:method:`post` request with a representation of the
         created resource.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         data = {'data': {'type': 'person'}}
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.mimetype == CONTENT_TYPE
 
     def test_no_response_media_type_params(self):
-        """"Tests that a server responds with :http:status:`415` if any
+        """"Tests that a server responds with :https:status:`415` if any
         media type parameters appear in the request content type header.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         data = {
@@ -95,54 +95,53 @@ class TestServerResponsibilities(ManagerTestBase):
                 'type': 'person',
             }
         }
-        headers = {'Content-Type': '{0}; version=1'.format(CONTENT_TYPE)}
-        response = self.app.post('/api/person', data=dumps(data),
-                                 headers=headers)
-        check_sole_error(response, 415, ['Content-Type',
-                                         'media type parameters'])
+        headers = {'Content-Type': f'{CONTENT_TYPE}; version=1'}
+        # flask 1.0.1 overrides headers when `json` parameter is used, so have to use json.dumps
+        response = self.app.post('/api/person', data=json.dumps(data), headers=headers)
+        check_sole_error(response, 415, ['Content-Type', 'media type parameters'])
 
     def test_empty_accept_header(self):
-        """Tests that an empty :http:header:`Accept` header, which is
+        """Tests that an empty :https:header:`Accept` header, which is
         technically legal according to :rfc:`2616#sec14.1`, is allowed,
         since it is not explicitly forbidden by JSON API.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         headers = {'Accept': ''}
         response = self.app.get('/api/person', headers=headers)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         assert len(document['data']) == 0
 
     def test_valid_accept_header(self):
-        """Tests that we handle requests with an :http:header:`Accept`
+        """Tests that we handle requests with an :https:header:`Accept`
         header specifying the JSON API mimetype are handled normally.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         headers = {'Accept': CONTENT_TYPE}
         response = self.app.get('/api/person', headers=headers)
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         assert len(document['data']) == 0
 
     def test_no_accept_media_type_params(self):
-        """"Tests that a server responds with :http:status:`406` if each
-        :http:header:`Accept` header is the JSON API media type, but
+        """"Tests that a server responds with :https:status:`406` if each
+        :https:header:`Accept` header is the JSON API media type, but
         each instance of that media type has a media type parameter.
 
         For more information, see the `Server Responsibilities`_ section
         of the JSON API specification.
 
-        .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+        .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
         headers = {'Accept': '{0}; q=.8, {0}; q=.9'.format(CONTENT_TYPE)}

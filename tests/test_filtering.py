@@ -34,7 +34,6 @@ from testing.postgresql import PostgresqlFactory as PGFactory
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
 from .helpers import dumps
-from .helpers import loads
 
 # This import is unused but is required for testing on PyPy. CPython can
 # use psycopg2, but PyPy can only use psycopg2cffi.
@@ -95,7 +94,7 @@ class TestFiltering(SearchTestBase):
     For more information, see the `Filtering`_ section of the JSON API
     specification.
 
-    .. _Filtering: http://jsonapi.org/format/#fetching-filtering
+    .. _Filtering: https://jsonapi.org/format/#fetching-filtering
 
     """
 
@@ -188,7 +187,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='like', val='%s%')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 2
         assert ['Jesus', 'Joseph'] == sorted(person['attributes']['name']
@@ -206,7 +205,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='id', op='in', val=[2, 3])]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 2
         assert ['2', '3'] == sorted(person['id'] for person in people)
@@ -250,7 +249,7 @@ class TestFiltering(SearchTestBase):
         filters = [dict(name='author', op='has',
                         val=dict(name='id', op='gt', val=1))]
         response = self.search('/api/comment', filters)
-        document = loads(response.data)
+        document = response.json
         comments = document['data']
         assert ['2', '3'] == sorted(comment['id'] for comment in comments)
 
@@ -273,7 +272,7 @@ class TestFiltering(SearchTestBase):
         article_filter = dict(name='article', op='has', val=author_filter)
         filters = [article_filter]
         response = self.search('/api/comment', filters)
-        document = loads(response.data)
+        document = response.json
         comments = document['data']
         assert ['0', '1', '2'] == sorted(comment['id'] for comment in comments)
 
@@ -296,7 +295,7 @@ class TestFiltering(SearchTestBase):
         articles_filter = dict(name='articles', op='any', val=comments_filter)
         filters = [articles_filter]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['0', '1', '2'] == sorted(person['id'] for person in people)
 
@@ -317,7 +316,7 @@ class TestFiltering(SearchTestBase):
         comments_filter = dict(name='comments', op='any', val=author_filter)
         filters = [comments_filter]
         response = self.search('/api/article', filters)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['0', '1', '2'] == sorted(article['id'] for article in articles)
 
@@ -339,7 +338,7 @@ class TestFiltering(SearchTestBase):
         author_filter = dict(name='author', op='has', val=comment_filter)
         filters = [author_filter]
         response = self.search('/api/article', filters)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['1', '3'] == sorted(article['id'] for article in articles)
 
@@ -352,7 +351,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='age', op='eq', field='id')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1', '3'] == sorted(person['id'] for person in people)
 
@@ -367,7 +366,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='birthday', op='eq', val='1969-07-20')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1'] == sorted(person['id'] for person in people)
 
@@ -382,7 +381,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='birthday', op='eq', val='2nd Jan 1900')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -394,7 +393,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='bedtime', op='eq', val='19:00')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -406,7 +405,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='birth_datetime', op='eq', val='1969-07-20')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -422,7 +421,7 @@ class TestFiltering(SearchTestBase):
         datestring = '2nd Jan 1900 14:35'
         filters = [dict(name='birthday', op='eq', val=datestring)]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -438,7 +437,7 @@ class TestFiltering(SearchTestBase):
         datetimestring = datetime(1900, 1, 2, 14, 35).isoformat()
         filters = [dict(name='bedtime', op='eq', val=datetimestring)]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -485,7 +484,7 @@ class TestFiltering(SearchTestBase):
                            dict(name='name', op='eq', val='John')]
                     }]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 3
         assert ['1', '2', '3'] == sorted(person['id'] for person in people)
@@ -517,7 +516,7 @@ class TestFiltering(SearchTestBase):
                 }]
         }]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert len(people) == 2
         assert ['2', '3'] == sorted(person['id'] for person in people)
@@ -582,7 +581,7 @@ class TestFiltering(SearchTestBase):
         self.session.commit()
         filters = [dict(name='id', op='gt', val=2)]
         response = self.search('/api/person/1/articles', filters)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['3', '4'] == sorted(article['id'] for article in articles)
 
@@ -632,7 +631,7 @@ class TestOperators(SearchTestBase):
         for op in '==', 'eq', 'equals', 'equal_to':
             filters = [dict(name='id', op=op, val=1)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['1'] == sorted(person['id'] for person in people)
 
@@ -645,7 +644,7 @@ class TestOperators(SearchTestBase):
         for op in '!=', 'ne', 'neq', 'not_equal_to', 'does_not_equal':
             filters = [dict(name='id', op=op, val=1)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['2'] == sorted(person['id'] for person in people)
 
@@ -658,7 +657,7 @@ class TestOperators(SearchTestBase):
         for op in '>', 'gt':
             filters = [dict(name='id', op=op, val=1)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['2'] == sorted(person['id'] for person in people)
 
@@ -671,7 +670,7 @@ class TestOperators(SearchTestBase):
         for op in '<', 'lt':
             filters = [dict(name='id', op=op, val=2)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['1'] == sorted(person['id'] for person in people)
 
@@ -685,7 +684,7 @@ class TestOperators(SearchTestBase):
         for op in '>=', 'ge', 'gte', 'geq':
             filters = [dict(name='id', op=op, val=2)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['2', '3'] == sorted(person['id'] for person in people)
 
@@ -699,7 +698,7 @@ class TestOperators(SearchTestBase):
         for op in '<=', 'le', 'lte', 'leq':
             filters = [dict(name='id', op=op, val=2)]
             response = self.search('/api/person', filters)
-            document = loads(response.data)
+            document = response.json
             people = document['data']
             assert ['1', '2'] == sorted(person['id'] for person in people)
 
@@ -712,7 +711,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='like', val='%ba%')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['bar', 'baz'] == sorted(person['attributes']['name']
                                         for person in people)
@@ -726,7 +725,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='not_like', val='%fo%')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['bar', 'baz'] == sorted(person['attributes']['name']
                                         for person in people)
@@ -740,7 +739,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='ilike', val='%BA%')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['bar', 'baz'] == sorted(person['attributes']['name']
                                         for person in people)
@@ -754,7 +753,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='id', op='in', val=[1, 3])]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1', '3'] == sorted(person['id'] for person in people)
 
@@ -767,7 +766,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='id', op='not_in', val=[1, 3])]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -779,7 +778,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='is_null')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['1'] == sorted(person['id'] for person in people)
 
@@ -791,7 +790,7 @@ class TestOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='name', op='is_not_null')]
         response = self.search('/api/person', filters)
-        document = loads(response.data)
+        document = response.json
         people = document['data']
         assert ['2'] == sorted(person['id'] for person in people)
 
@@ -813,7 +812,7 @@ class TestNetworkOperators(SearchTestBase):
     For more information, see `Network Address Functions and Operators`_
     in the PostgreSQL documentation.
 
-    .. _Network Address Functions and Operators: http://www.postgresql.org/docs/current/interactive/functions-net.html
+    .. _Network Address Functions and Operators: https://www.postgresql.org/docs/current/interactive/functions-net.html
 
     """
 
@@ -866,7 +865,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='<>', val='192.168.1.4')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1'] == sorted(network['id'] for network in networks)
 
@@ -886,7 +885,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='<<', val='192.168.1/24')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1'] == sorted(network['id'] for network in networks)
 
@@ -907,7 +906,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='<<=', val='192.168.1/24')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1', '2'] == sorted(network['id'] for network in networks)
 
@@ -927,7 +926,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='>>', val='192.168.1.5')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1'] == sorted(network['id'] for network in networks)
 
@@ -948,7 +947,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='>>=', val='192.168.1/24')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1', '2'] == sorted(network['id'] for network in networks)
 
@@ -976,7 +975,7 @@ class TestNetworkOperators(SearchTestBase):
         self.session.commit()
         filters = [dict(name='address', op='&&', val='192.168.1.80/28')]
         response = self.search('/api/network', filters)
-        document = loads(response.data)
+        document = response.json
         networks = document['data']
         assert ['1', '2'] == sorted(network['id'] for network in networks)
 
@@ -1047,7 +1046,7 @@ class TestAssociationProxy(SearchTestBase):
         filters = [dict(name='tags', op='any',
                         val=dict(name='name', op='eq', val='bar'))]
         response = self.search('/api/article', filters)
-        document = loads(response.data)
+        document = response.json
         articles = document['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
 
@@ -1108,7 +1107,7 @@ class TestTSVectorOperators(SearchTestBase):
         filters = [
             dict(name='document', op='to_tsquery', val='911 & Porsche')]
         response = self.search('/api/product', filters)
-        document = loads(response.data)
+        document = response.json
         products = document['data']
         assert [self.product1.id] == sorted(
             int(product['id']) for product in products)
@@ -1125,6 +1124,6 @@ class TestTSVectorOperators(SearchTestBase):
         filters = [
             dict(name='document', op='plainto_tsquery', val='911 Porsche')]
         response = self.search('/api/product', filters)
-        document = loads(response.data)
+        document = response.json
         products = document['data']
         assert [self.product1.id] == [int(product['id']) for product in products]

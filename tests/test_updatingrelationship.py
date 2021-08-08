@@ -77,7 +77,7 @@ class TestAdding(ManagerTestBase):
         self.session.commit()
         data = dict(data=dict(id=1, type='bogus'))
         response = self.app.post('/api/person/1/relationships/bogus',
-                                 data=dumps(data))
+                                 json=data)
         assert response.status_code == 404
         # TODO check error message here
 
@@ -92,7 +92,7 @@ class TestAdding(ManagerTestBase):
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
         response = self.app.post('/api/person/1/relationships',
-                                 data=dumps(data))
+                                 json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -220,7 +220,7 @@ class TestAdding(ManagerTestBase):
         # The preprocessor will change the resource ID and the
         # relationship name.
         self.app.post('/api2/person/1/relationships/articles',
-                      data=dumps(data))
+                      json=data)
         assert data['triggered']
 
     def test_change_two_preprocessor(self):
@@ -244,7 +244,7 @@ class TestAdding(ManagerTestBase):
         # The preprocessor will change the resource ID and the
         # relationship name.
         response = self.app.post('/api2/person/bogus1/relationships/bogus2',
-                                 data=dumps(data))
+                                 json=data)
         assert response.status_code == 204
         assert article.author is person
 
@@ -268,7 +268,7 @@ class TestAdding(ManagerTestBase):
                                 url_prefix='/api2', methods=['PATCH'])
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.app.post('/api2/person/1/relationships/articles',
-                                 data=dumps(data))
+                                 json=data)
         assert response.status_code == 204
         assert has_run == [True]
 
@@ -309,7 +309,7 @@ class TestDeleting(ManagerTestBase):
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
         response = self.app.delete('/api/person/bogus/relationships/articles',
-                                   data=dumps(data))
+                                   json=data)
         assert response.status_code == 404
         # TODO check error message here
 
@@ -340,7 +340,7 @@ class TestDeleting(ManagerTestBase):
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
         response = self.app.delete('/api/person/1/relationships',
-                                   data=dumps(data))
+                                   json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -473,7 +473,7 @@ class TestDeleting(ManagerTestBase):
         # The preprocessor will change the resource ID and the
         # relationship name.
         self.app.delete('/api2/person/1/relationships/articles',
-                        data=dumps(data))
+                        json=data)
         assert data['triggered']
 
     def test_change_id_preprocessor(self):
@@ -492,7 +492,7 @@ class TestDeleting(ManagerTestBase):
                                 url_prefix='/api2', methods=['PATCH'])
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.app.delete('/api2/person/bogus/relationships/articles',
-                                   data=dumps(data))
+                                   json=data)
         assert response.status_code == 204
         assert article.author is None
 
@@ -518,7 +518,7 @@ class TestDeleting(ManagerTestBase):
                                 allow_delete_from_to_many_relationships=True)
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.app.delete('/api2/person/1/relationships/articles',
-                                   data=dumps(data))
+                                   json=data)
         assert response.status_code == 204
         assert has_run == [True]
 
@@ -559,7 +559,7 @@ class TestUpdatingToMany(ManagerTestBase):
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
         response = self.app.patch('/api/person/bogus/relationships/articles',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 404
         # TODO check error message here
 
@@ -590,7 +590,7 @@ class TestUpdatingToMany(ManagerTestBase):
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
         response = self.app.patch('/api/person/1/relationships',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -723,7 +723,7 @@ class TestUpdatingToMany(ManagerTestBase):
         # The preprocessor will change the resource ID and the
         # relationship name.
         self.app.patch('/api2/person/1/relationships/articles',
-                       data=dumps(data))
+                       json=data)
         assert data['triggered']
 
     def test_change_two_preprocessor(self):
@@ -748,7 +748,7 @@ class TestUpdatingToMany(ManagerTestBase):
         # The preprocessor will change the resource ID and the
         # relationship name.
         response = self.app.patch('/api2/person/bogus1/relationships/bogus2',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 204
         assert person.articles == [article]
 
@@ -773,7 +773,7 @@ class TestUpdatingToMany(ManagerTestBase):
                                 allow_to_many_replacement=True)
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.app.patch('/api2/person/1/relationships/articles',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 204
         assert has_run == [True]
 
@@ -787,7 +787,7 @@ class TestUpdatingToMany(ManagerTestBase):
         self.session.commit()
         data = {'data': None}
         response = self.app.patch('/api/person/1/relationships/articles',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 400
         # TODO Check error message here.
 
@@ -827,7 +827,7 @@ class TestUpdatingToOne(ManagerTestBase):
         self.session.commit()
         data = dict(data=dict(id=1, type='person'))
         response = self.app.patch('/api/article/bogus/relationships/author',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 404
         # TODO check error message here
 
@@ -858,7 +858,7 @@ class TestUpdatingToOne(ManagerTestBase):
         self.session.commit()
         data = dict(data=dict(id=1, type='person'))
         response = self.app.patch('/api/article/1/relationships',
-                                  data=dumps(data))
+                                  json=data)
         assert response.status_code == 405
         # TODO check error message here
 

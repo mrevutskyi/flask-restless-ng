@@ -43,7 +43,6 @@ from .helpers import FlaskSQLAlchemyTestBase
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
 from .helpers import dumps
-from .helpers import loads
 
 try:
     from flask_sqlalchemy import SQLAlchemy
@@ -131,7 +130,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data),
+        response = self.app.patch('/api/person/1', json=data,
                                   headers=headers)
         assert response.status_code == 415
         assert person.name == u'foo'
@@ -155,7 +154,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data),
+        response = self.app.patch('/api/person/1', json=data,
                                   headers=headers)
         assert response.status_code == 406
         assert person.name == u'foo'
@@ -170,7 +169,7 @@ class TestUpdating(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=dict(type='person', id=1))
-        response = self.app.patch('/api/article/1/author', data=dumps(data))
+        response = self.app.patch('/api/article/1/author', json=data)
         assert response.status_code == 405
         # TODO check error message here
         assert article.author is None
@@ -250,7 +249,7 @@ class TestUpdating(ManagerTestBase):
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='person', id='1'))
-        response = self.app.patch('/api/person/1', data=dumps(data),
+        response = self.app.patch('/api/person/1', json=data,
                                   content_type=CONTENT_TYPE)
         assert response.status_code == 204
         assert response.headers['Content-Type'] == CONTENT_TYPE
@@ -264,7 +263,7 @@ class TestUpdating(ManagerTestBase):
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='person', id='1'))
-        response = self.app.patch('/api/person/1', data=dumps(data),
+        response = self.app.patch('/api/person/1', json=data,
                                   content_type=None)
         assert response.status_code == 415
         assert response.headers['Content-Type'] == CONTENT_TYPE
@@ -288,7 +287,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/2', data=dumps(data))
+        response = self.app.patch('/api/person/2', json=data)
         assert response.status_code == 409  # Conflict
         assert self.session.is_active, 'Session is in `partial rollback` state'
         data = {
@@ -300,7 +299,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/2', data=dumps(data))
+        response = self.app.patch('/api/person/2', json=data)
         assert response.status_code == 204
         assert person2.name == 'baz'
 
@@ -352,7 +351,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert 400 == response.status_code
 
     def test_read_only_hybrid_property(self):
@@ -374,7 +373,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/interval/1', data=dumps(data))
+        response = self.app.patch('/api/interval/1', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -392,7 +391,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/interval/1', data=dumps(data))
+        response = self.app.patch('/api/interval/1', json=data)
         assert response.status_code == 204
         assert interval.start == 5
         assert interval.end == 9
@@ -414,7 +413,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/people/1', data=dumps(data))
+        response = self.app.patch('/api/people/1', json=data)
         assert response.status_code == 204
         assert person.name == u'foo'
 
@@ -434,7 +433,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.name == u'foo'
         data = {
@@ -446,7 +445,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         assert response.status_code == 204
         assert person.name == 'bar'
 
@@ -460,7 +459,7 @@ class TestUpdating(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=dict(id=1, type='person'))
-        response = self.app.patch('/api/article/1/author', data=dumps(data))
+        response = self.app.patch('/api/article/1/author', json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -474,7 +473,7 @@ class TestUpdating(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
-        response = self.app.patch('/api/person/1/articles', data=dumps(data))
+        response = self.app.patch('/api/person/1/articles', json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -503,7 +502,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         check_sole_error(response, 400, ['articles', 'data', 'empty list'])
 
     def test_missing_type(self):
@@ -522,7 +521,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 400
         # TODO check error message here
         assert person.name == u'foo'
@@ -543,7 +542,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 400
         # TODO check error message here
         assert person.name == u'foo'
@@ -570,7 +569,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         check_sole_error(response, 404, ['found', 'person', '1'])
 
     def test_conflicting_type_to_one_link(self):
@@ -597,7 +596,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         assert response.status_code == 409
         # TODO check error message here
 
@@ -627,7 +626,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', data=dumps(data))
+        response = self.app.patch('/api2/person/1', json=data)
         assert response.status_code == 409
         # TODO check error message here
 
@@ -648,7 +647,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -671,7 +670,7 @@ class TestUpdating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', data=dumps(data))
+        response = self.app.patch('/api/article/1', json=data)
         check_sole_error(response, 400, ['missing', 'relationship object',
                                          'author'])
         # Check that the article was not updated to None.
@@ -718,7 +717,7 @@ class TestProcessors(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/0', data=dumps(data))
+        response = self.app.patch('/api/person/0', json=data)
         assert response.status_code == 204
         assert person.name == u'foo'
 
@@ -746,9 +745,9 @@ class TestProcessors(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 403
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         assert len(errors) == 1
         error = errors[0]
@@ -784,7 +783,7 @@ class TestProcessors(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.name == 'bar'
 
@@ -813,7 +812,7 @@ class TestProcessors(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
         assert person.name == 'bar'
         assert temp == ['baz']
@@ -902,7 +901,7 @@ class TestAssociationProxy(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/article/1', data=dumps(data))
+        response = self.app.patch('/api2/article/1', json=data)
         assert response.status_code == 204
         assert [tag1, tag2] == sorted(article.tags, key=lambda t: t.id)
 
@@ -949,7 +948,7 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         self.manager.create_api(self.Parent)
         self.manager.create_api(self.Child)
 
-    def test_create(self):
+    def test_update(self):
         """Tests for creating a resource."""
         person = self.Person(id=1, name=u'foo')
         self.session.add(person)
@@ -963,8 +962,9 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/person/1', data=dumps(data))
+        response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
+        person = self.session.query(self.Person).get(1)
         assert person.name == 'bar'
 
     def test_collection(self):

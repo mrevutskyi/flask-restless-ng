@@ -52,7 +52,6 @@ else:
 
 
 dumps = json.dumps
-loads = json.loads
 
 with open('tests/jsonapi-schema.json', 'r') as f:
     json_api_schema = json.load(f)
@@ -124,7 +123,7 @@ def check_sole_error(response, status, strings):
     if isinstance(strings, str):
         strings = [strings]
     assert response.status_code == status
-    document = loads(response.data)
+    document = response.json
     errors = document['errors']
     assert len(errors) == 1
     error = errors[0]
@@ -167,7 +166,7 @@ def force_content_type_jsonapi(test_client):
 
 
 # This code is adapted from
-# http://docs.sqlalchemy.org/en/latest/core/custom_types.html#backend-agnostic-guid-type
+# https://docs.sqlalchemy.org/en/latest/core/custom_types.html#backend-agnostic-guid-type
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
 

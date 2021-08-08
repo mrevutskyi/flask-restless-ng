@@ -14,7 +14,7 @@
 The tests in this module correspond to the `Deleting Resources`_ section
 of the JSON API specification.
 
-.. _Deleting Resources: http://jsonapi.org/format/#crud-deleting
+.. _Deleting Resources: https://jsonapi.org/format/#crud-deleting
 
 """
 from sqlalchemy import Column
@@ -27,7 +27,7 @@ class TestDeletingResources(ManagerTestBase):
     """Tests corresponding to the `Deleting Resources`_ section of the JSON API
     specification.
 
-    .. _Deleting Resources: http://jsonapi.org/format/#crud-deleting
+    .. _Deleting Resources: https://jsonapi.org/format/#crud-deleting
 
     """
 
@@ -55,7 +55,7 @@ class TestDeletingResources(ManagerTestBase):
         For more information, see the `Deleting Resources`_ section of the JSON
         API specification.
 
-        .. _Deleting Resources: http://jsonapi.org/format/#crud-deleting
+        .. _Deleting Resources: https://jsonapi.org/format/#crud-deleting
 
         """
         person = self.Person(id=1)
@@ -67,12 +67,12 @@ class TestDeletingResources(ManagerTestBase):
 
     def test_delete_nonexistent(self):
         """Tests that deleting a nonexistent resource causes a
-        :http:status:`404`.
+        :https:status:`404`.
 
         For more information, see the `404 Not Found`_ section of the JSON API
         specification.
 
-        .. _404 Not Found: http://jsonapi.org/format/#crud-deleting-responses-404
+        .. _404 Not Found: https://jsonapi.org/format/#crud-deleting-responses-404
 
         """
         response = self.app.delete('/api/person/1')

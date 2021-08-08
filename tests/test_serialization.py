@@ -41,7 +41,6 @@ from flask_restless import SerializationException
 from .helpers import GUID
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
-from .helpers import loads
 
 
 def build_serializer_with_exception(resource_type):
@@ -119,11 +118,11 @@ class TestFetchResource(ManagerTestBase):
         self.session.commit()
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['has_early_bedtime']
         response = self.app.get('/api/person/2')
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert not person['attributes']['has_early_bedtime']
 
@@ -136,7 +135,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['uuid'] == str(uuid)
 
@@ -149,7 +148,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['bedtime'] == now.isoformat()
 
@@ -162,7 +161,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['birth_datetime'] == now.isoformat()
 
@@ -175,7 +174,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['birthday'] == now.isoformat()
 
@@ -191,7 +190,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['decorated_datetime'] == now.isoformat()
 
@@ -208,7 +207,7 @@ class TestFetchResource(ManagerTestBase):
         self.manager.create_api(self.Person)
         response = self.app.get('/api/person/1')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['decorated_interval'] == 10
 
@@ -274,7 +273,7 @@ class TestFetchResource(ManagerTestBase):
 
         query_string = {'include': 'author'}
         response = self.app.get('/api/article/1', query_string=query_string)
-        document = loads(response.data)
+        document = response.json
         # First, the article resource should have an extra 'bar' attribute.
         article = document['data']
         assert article['attributes']['bar'] == 'bar'
@@ -342,7 +341,7 @@ class TestFetchResource(ManagerTestBase):
         query_string = {'include': 'author'}
         response = self.app.get('/api/article', query_string=query_string)
         assert response.status_code == 500
-        document = loads(response.data)
+        document = response.json
         errors = document['errors']
         assert len(errors) == 2
         error1, error2 = errors
@@ -379,7 +378,7 @@ class TestFetchResource(ManagerTestBase):
         # the first 'author') and person 2 once (for the last 'author').
         query_string = {'include': 'author.articles.comments.author'}
         response = self.app.get('/api/comment/1', query_string=query_string)
-        document = loads(response.data)
+        document = response.json
         included = document['included']
         # Sort the included resources, first by type, then by ID.
         resources = sorted(included, key=lambda x: (x['type'], x['id']))

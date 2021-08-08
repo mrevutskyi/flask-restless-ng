@@ -1,4 +1,5 @@
 from flask import Flask
+from flask.testing import FlaskClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
@@ -14,6 +15,11 @@ def pytest_configure(config):
 
 class BaseTestClass:
     """Base test class that contains required fixtures."""
+
+    app = None
+    client = None  # type: FlaskClient
+    session = None
+    engine = None
 
     @classmethod
     def setup_class(cls):

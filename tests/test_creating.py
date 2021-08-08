@@ -47,11 +47,10 @@ from .helpers import FlaskSQLAlchemyTestBase
 from .helpers import ManagerTestBase
 from .helpers import check_sole_error
 from .helpers import dumps
-from .helpers import loads
 from .test_serialization import build_serializer_with_exception
 
 
-def raise_s_exception(instance, *args, **kw):
+def raise_s_exception(instance, *_, **__):
     """Immediately raises a :exc:`SerializationException` with access to
     the provided `instance` of a SQLAlchemy model.
 
@@ -71,7 +70,7 @@ def raise_d_exception(*args, **kw):
 
     """
     class Deserializer:
-        def deserialize(self, *args):
+        def deserialize(self, *_):
             raise DeserializationException()
     return Deserializer()
 
@@ -139,7 +138,7 @@ class TestCreating(ManagerTestBase):
                 'type': 'person'
             }
         }
-        response = self.app.post('/api/person', data=dumps(data),
+        response = self.app.post('/api/person', json=data,
                                  headers=headers)
         assert response.status_code == 415
         assert self.session.query(self.Person).count() == 0
@@ -156,7 +155,7 @@ class TestCreating(ManagerTestBase):
                 'type': 'person'
             }
         }
-        response = self.app.post('/api/person', data=dumps(data),
+        response = self.app.post('/api/person', json=data,
                                  headers=headers)
         assert response.status_code == 406
         assert self.session.query(self.Person).count() == 0
@@ -171,7 +170,7 @@ class TestCreating(ManagerTestBase):
         self.session.add_all([person, article])
         self.session.commit()
         data = dict(data=dict(type='article', id=1))
-        response = self.app.post('/api/person/1/articles', data=dumps(data))
+        response = self.app.post('/api/person/1/articles', json=data)
         assert response.status_code == 405
         # TODO check error message here
         assert person.articles == []
@@ -183,7 +182,7 @@ class TestCreating(ManagerTestBase):
         data = dumps(data, cls=JSONEncoder)
         response = self.app.post('/api/person', data=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['bedtime'] == bedtime.isoformat()
 
@@ -195,7 +194,7 @@ class TestCreating(ManagerTestBase):
         data = dumps(data, cls=JSONEncoder)
         response = self.app.post('/api/article', data=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         received_date = article['attributes']['date_created']
         assert received_date == date_created.isoformat()
@@ -208,7 +207,7 @@ class TestCreating(ManagerTestBase):
         data = dumps(data, cls=JSONEncoder)
         response = self.app.post('/api/person', data=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         received_time = person['attributes']['birth_datetime']
         assert received_time == birth_datetime.isoformat()
@@ -219,7 +218,7 @@ class TestCreating(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', data=dumps(data),
+        response = self.app.post('/api/person', json=data,
                                  content_type=CONTENT_TYPE)
         assert response.status_code == 201
         assert response.headers['Content-Type'] == CONTENT_TYPE
@@ -230,8 +229,7 @@ class TestCreating(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', data=dumps(data),
-                                 content_type=None)
+        response = self.app.post('/api/person', json=data, content_type=None)
         assert response.status_code == 415
         assert response.headers['Content-Type'] == CONTENT_TYPE
 
@@ -259,7 +257,7 @@ class TestCreating(ManagerTestBase):
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 409  # Conflict
         # TODO check error message here
 
@@ -273,7 +271,7 @@ class TestCreating(ManagerTestBase):
         self.session.add(person)
         self.session.commit()
         data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 409  # Conflict
         assert self.session.is_active, 'Session is in `partial rollback` state'
         person = dict(data=dict(type='person', attributes=dict(name=u'bar')))
@@ -286,7 +284,7 @@ class TestCreating(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', attributes=dict(bogus=0)))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -305,7 +303,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -325,7 +323,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         keywords = ['deserialize', 'missing', '"data"', 'element',
                     'linkage object', 'relationship', '"articles"']
@@ -339,7 +337,7 @@ class TestCreating(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', attributes=dict(is_minor=True)))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -351,9 +349,9 @@ class TestCreating(ManagerTestBase):
         """
         data = dict(data=dict(type='person',
                               attributes=dict(birth_datetime=None)))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['birth_datetime'] is None
 
@@ -366,9 +364,9 @@ class TestCreating(ManagerTestBase):
         """
         data = dict(data=dict(type='person',
                               attributes=dict(birth_datetime='')))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['birth_datetime'] is None
 
@@ -380,9 +378,9 @@ class TestCreating(ManagerTestBase):
         CURRENT = 'CURRENT_TIMESTAMP'
         data = dict(data=dict(type='person',
                               attributes=dict(birth_datetime=CURRENT)))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         birth_datetime = person['attributes']['birth_datetime']
         assert birth_datetime is not None
@@ -396,9 +394,9 @@ class TestCreating(ManagerTestBase):
     def test_timedelta(self):
         """Tests for creating an object with a timedelta attribute."""
         data = dict(data=dict(type='person', attributes=dict(hangtime=300)))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['hangtime'] == 300
 
@@ -421,9 +419,9 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         articles = person['relationships']['articles']['data']
         assert ['1', '2'] == sorted(article['id'] for article in articles)
@@ -444,9 +442,9 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         person = article['relationships']['author']['data']
         assert person['type'] == 'person'
@@ -455,9 +453,9 @@ class TestCreating(ManagerTestBase):
     def test_unicode_primary_key(self):
         """Test for creating a resource with a unicode primary key."""
         data = dict(data=dict(type='tag', attributes=dict(name=u'Юникод')))
-        response = self.app.post('/api/tag', data=dumps(data))
+        response = self.app.post('/api/tag', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         tag = document['data']
         assert tag['attributes']['name'] == u'Юникод'
 
@@ -508,9 +506,9 @@ class TestCreating(ManagerTestBase):
                                 serializer=CustomSerializer(),
                                 deserializer=CustomDeserializer())
         data = dict(data=dict(type='person', attributes=dict(foo='bar')))
-        response = self.app.post('/api2/person', data=dumps(data))
+        response = self.app.post('/api2/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['foo'] == 'bar'
 
@@ -569,7 +567,7 @@ class TestCreating(ManagerTestBase):
 
         self.manager.create_api(self.Person, methods=['POST'], url_prefix='/api2', serializer=CustomSerializer())
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api2/person', data=dumps(data))
+        response = self.app.post('/api2/person', json=data)
         assert response.status_code == 400
         # TODO check error message here
 
@@ -583,7 +581,7 @@ class TestCreating(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=dict(id=1, type='person'))
-        response = self.app.post('/api/article/1/author', data=dumps(data))
+        response = self.app.post('/api/article/1/author', json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -597,7 +595,7 @@ class TestCreating(ManagerTestBase):
         self.session.add_all([article, person])
         self.session.commit()
         data = dict(data=[dict(id=1, type='article')])
-        response = self.app.post('/api/person/1/articles', data=dumps(data))
+        response = self.app.post('/api/person/1/articles', json=data)
         assert response.status_code == 405
         # TODO check error message here
 
@@ -607,7 +605,7 @@ class TestCreating(ManagerTestBase):
 
         """
         data = dict(type='person')
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 400
         keywords = ['deserialize', 'missing', '"data"', 'element']
         check_sole_error(response, 400, keywords)
@@ -633,7 +631,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         keywords = ['deserialize', 'missing', '"id"', 'element',
                     'linkage object', 'relationship', '"author"']
         check_sole_error(response, 400, keywords)
@@ -659,7 +657,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         keywords = ['deserialize', 'missing', '"type"', 'element',
                     'linkage object', 'relationship', '"author"']
         check_sole_error(response, 400, keywords)
@@ -687,7 +685,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         keywords = ['deserialize', 'expected', 'type', '"person"', '"article"',
                     'linkage object', 'relationship', '"author"']
         check_sole_error(response, 409, keywords)
@@ -713,7 +711,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         keywords = ['deserialize', 'missing', '"id"', 'element',
                     'linkage object', 'relationship', '"articles"']
         check_sole_error(response, 400, keywords)
@@ -739,7 +737,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         keywords = ['deserialize', 'missing', '"type"', 'element',
                     'linkage object', 'relationship', '"articles"']
         check_sole_error(response, 400, keywords)
@@ -769,7 +767,7 @@ class TestCreating(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         keywords = ['deserialize', 'expected', 'type', '"article"', '"person"',
                     'linkage object', 'relationship', '"articles"']
         check_sole_error(response, 409, keywords)
@@ -804,9 +802,9 @@ class TestProcessors(ManagerTestBase):
         self.manager.create_api(self.Person, methods=['POST'],
                                 preprocessors=preprocessors)
         data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         assert person['attributes']['name'] == 'bar'
 
@@ -820,9 +818,9 @@ class TestProcessors(ManagerTestBase):
         self.manager.create_api(self.Person, methods=['POST'],
                                 postprocessors=postprocessors)
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         assert document['foo'] == 'bar'
 
 
@@ -897,9 +895,9 @@ class TestAssociationProxy(ManagerTestBase):
                 }
             }
         }
-        response = self.app.post('/api/article', data=dumps(data))
+        response = self.app.post('/api/article', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         article = document['data']
         tags = article['relationships']['tags']['data']
         assert ['1', '2'] == sorted(tag['id'] for tag in tags)
@@ -926,9 +924,9 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
     def test_create(self):
         """Tests for creating a resource."""
         data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', data=dumps(data))
+        response = self.app.post('/api/person', json=data)
         assert response.status_code == 201
-        document = loads(response.data)
+        document = response.json
         person = document['data']
         # TODO To make this test more robust, should query for person objects.
         assert person['id'] == '1'

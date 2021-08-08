@@ -390,14 +390,12 @@ def requires_json_api_mimetype(func):
         content_is_json = content_type.startswith(CONTENT_TYPE)
         # Request must have the Content-Type: application/vnd.api+json header,
         if not content_is_json:
-            detail = ('Request must have "Content-Type: {0}"'
-                      ' header').format(CONTENT_TYPE)
+            detail = f'Request must have "Content-Type: {CONTENT_TYPE}" header'
             return error_response(415, detail=detail)
         # JSON API requires that the content type header does not have
         # any media type parameters.
         if extra:
-            detail = ('Content-Type header must not have any media type'
-                      ' parameters but found {0}'.format(extra))
+            detail = f'Content-Type header must not have any media type parameters but found {extra}'
             return error_response(415, detail=detail)
         return func(*args, **kw)
     return new_func

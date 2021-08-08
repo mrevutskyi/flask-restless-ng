@@ -15,7 +15,6 @@ from sqlalchemy import Integer
 
 from .helpers import ManagerTestBase
 from .helpers import dumps
-from .helpers import loads
 
 
 class TestFunctionEvaluation(ManagerTestBase):
@@ -55,7 +54,7 @@ class TestFunctionEvaluation(ManagerTestBase):
         query = dumps(functions)
         response = self.app.get('/api/eval/person?functions={0}'.format(query))
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         results = document['data']
         assert [45.0, 15.0, 3] == results
 
@@ -83,7 +82,7 @@ class TestFunctionEvaluation(ManagerTestBase):
         """
         response = self.app.get('/api/eval/person?functions=[]')
         assert response.status_code == 200
-        document = loads(response.data)
+        document = response.json
         results = document['data']
         assert results == []
 

@@ -12,7 +12,7 @@ class TestSparseFieldsets(ManagerTestBase):
     """Tests corresponding to the `Sparse Fieldsets`_ section of the
     JSON API specification.
 
-    .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+    .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
     """
 
@@ -45,7 +45,7 @@ class TestSparseFieldsets(ManagerTestBase):
         For more information, see the `Sparse Fieldsets`_ section
         of the JSON API specification.
 
-        .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+        .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
         person = self.Person(id=1, name=u'foo', age=99)
@@ -68,7 +68,7 @@ class TestSparseFieldsets(ManagerTestBase):
         For more information, see the `Sparse Fieldsets`_ section
         of the JSON API specification.
 
-        .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+        .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
         person = self.Person(id=1, name=u'foo', age=99)
@@ -89,7 +89,7 @@ class TestSparseFieldsets(ManagerTestBase):
         For more information, see the `Sparse Fieldsets`_ section
         of the JSON API specification.
 
-        .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+        .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
         person1 = self.Person(id=1, name=u'foo', age=99)
@@ -111,7 +111,7 @@ class TestSparseFieldsets(ManagerTestBase):
         For more information, see the `Sparse Fieldsets`_ section
         of the JSON API specification.
 
-        .. _Sparse Fieldsets: http://jsonapi.org/format/#fetching-sparse-fieldsets
+        .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
         article = self.Article(id=1, title=u'bar')

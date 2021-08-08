@@ -14,7 +14,6 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 
 from .helpers import ManagerTestBase
-from .helpers import loads
 
 
 class TestMetadata(ManagerTestBase):
@@ -45,5 +44,5 @@ class TestMetadata(ManagerTestBase):
         self.session.add_all(people)
         self.session.commit()
         response = self.app.get('/api/person')
-        document = loads(response.data)
+        document = response.json
         assert document['meta']['total'] == 15
