@@ -16,6 +16,7 @@ The main class in this module, :class:`API`, is a
 SQLAlchemy models compatible with the JSON API specification.
 
 """
+from flask import escape
 from flask import json
 from flask import request
 from werkzeug.exceptions import BadRequest
@@ -129,19 +130,15 @@ class API(APIBase):
                                   self.primary_key)
         # Return an error if there is no resource with the specified ID.
         if primary_resource is None:
-            detail = 'No instance with ID {0}'.format(resource_id)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No instance with ID {escape(resource_id)}')
         # Get the model of the specified relation.
         related_model = get_related_model(self.model, relation_name)
         # Return an error if no such relation exists.
         if related_model is None:
-            detail = 'No such relation: {0}'.format(relation_name)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No such relation: {escape(relation_name)}')
         # Return an error if the relation is a to-one relation.
         if not is_like_list(primary_resource, relation_name):
-            detail = ('Cannot access a related resource by ID from a to-one'
-                      ' relation')
-            return error_response(404, detail=detail)
+            return error_response(404, detail='Cannot access a related resource by ID from a to-one relation')
         # Get the related resources.
         resources = getattr(primary_resource, relation_name)
         # Check if one of the related resources has the specified ID. (JSON API
@@ -149,9 +146,7 @@ class API(APIBase):
         primary_keys = (self.api_manager.primary_key_value(resource, as_string=True)
                         for resource in resources)
         if not any(k == str(related_resource_id) for k in primary_keys):
-            detail = 'No related resource with ID {0}'
-            detail = detail.format(related_resource_id)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No related resource with ID {escape(related_resource_id)}')
         # Get the related resource by its ID.
         resource = get_by(self.session, related_model, related_resource_id, self.api_manager.primary_key_for(related_model))
         return self._get_resource_helper(resource,
@@ -199,16 +194,13 @@ class API(APIBase):
                     resource_id = temp_result
 
         # Get the resource with the specified ID.
-        primary_resource = get_by(self.session, self.model, resource_id,
-                                  self.primary_key)
+        primary_resource = get_by(self.session, self.model, resource_id, self.primary_key)
         if primary_resource is None:
-            detail = 'No resource with ID {0}'.format(resource_id)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No resource with ID {escape(resource_id)}')
         # Get the model of the specified relation.
         related_model = get_related_model(self.model, relation_name)
         if related_model is None:
-            detail = 'No such relation: {0}'.format(relation_name)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No such relation: {escape(relation_name)}')
         # Determine if this is a to-one or a to-many relation.
         if is_like_list(primary_resource, relation_name):
             return self._get_collection_helper(resource=primary_resource,
@@ -265,8 +257,7 @@ class API(APIBase):
         instance = get_by(self.session, self.model, resource_id,
                           self.primary_key)
         if instance is None:
-            detail = 'No resource found with ID {0}'.format(resource_id)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No resource found with ID {escape(resource_id)}')
         self.session.delete(instance)
         was_deleted = len(self.session.deleted) > 0
         self.session.commit()
@@ -321,11 +312,9 @@ class API(APIBase):
         # Determine the value of the primary key for this instance and
         # encode URL-encode it (in case it is a Unicode string).
         primary_key = self.api_manager.primary_key_value(instance, as_string=True)
-        # The URL at which a client can access the newly created instance
-        # of the model.
-        url = '{0}/{1}'.format(request.base_url, primary_key)
+        # The URL at which a client can access the newly created instance of the model.
         # Provide that URL in the Location header in the response.
-        headers = dict(Location=url)
+        headers = dict(Location=f'{request.base_url}/{primary_key}')
         # Wrap the resulting object or list of objects under a 'data' key.
         result = {'jsonapi': {'version': JSONAPI_VERSION}, 'data': data}
         # Include any requested resources in a compound document.
@@ -365,24 +354,19 @@ class API(APIBase):
         """
         # Update any relationships.
         links = data.pop('relationships', {})
-        for linkname, link in links.items():
+        for link_name, link in links.items():
             if not isinstance(link, dict):
-                detail = ('missing relationship object for "{0}" in resource'
-                          ' of type "{1}" with ID "{2}"')
-                detail = detail.format(linkname, self.collection_name,
-                                       resource_id)
+                detail = f'missing relationship object for "{escape(link_name)}" in resource of type "{self.collection_name}" with ID "{escape(resource_id)}"'
                 return error_response(400, detail=detail)
             # The client is obligated by JSON API to provide linkage if
             # the `links` attribute exists.
             if 'data' not in link:
-                detail = 'relationship "{0}" is missing resource linkage'
-                detail = detail.format(linkname)
-                return error_response(400, detail=detail)
+                return error_response(400, detail=f'relationship "{escape(link_name)}" is missing resource linkage')
             linkage = link['data']
-            related_model = get_related_model(self.model, linkname)
+            related_model = get_related_model(self.model, link_name)
             # If this is a to-many relationship, get all the related
             # resources.
-            if is_like_list(instance, linkname):
+            if is_like_list(instance, link_name):
                 # Replacement of a to-many relationship may have been disabled
                 # by the user.
                 if not self.allow_to_many_replacement:
@@ -390,34 +374,27 @@ class API(APIBase):
                     return error_response(403, detail=detail)
                 # The provided data must be a list for a to-many relationship.
                 if not isinstance(linkage, list):
-                    detail = ('"data" element for the to-many relationship'
-                              ' "{0}" on the instance of "{1}" with ID "{2}"'
-                              ' must be a list; maybe you intended to provide'
-                              ' an empty list?')
-                    detail = detail.format(linkname, self.collection_name,
-                                           resource_id)
+                    detail = (f'"data" element for the to-many relationship "{escape(link_name)}" on the instance of "{self.collection_name}"'
+                              f' with ID "{escape(resource_id)}" must be a list; maybe you intended to provide an empty list?')
                     return error_response(400, detail=detail)
                 # If this is left empty, the relationship will be zeroed.
-                newvalue = []
+                new_value = []
                 not_found = []
                 for rel in linkage:
                     expected_type = self.api_manager.collection_name(related_model)
                     type_ = rel['type']
                     if type_ != expected_type:
-                        detail = 'Type must be {0}, not {1}'
-                        detail = detail.format(expected_type, type_)
-                        return error_response(409, detail=detail)
+                        return error_response(409, detail=f'Type must be {expected_type}, not {escape(type_)}')
                     id_ = rel['id']
                     inst = get_by(self.session, related_model, id_, self.api_manager.primary_key_for(related_model))
                     if inst is None:
                         not_found.append((id_, type_))
                     else:
-                        newvalue.append(inst)
+                        new_value.append(inst)
                 # If any of the requested to-many linkage objects do not exist,
                 # return an error response.
                 if not_found:
-                    detail = 'No object of type {0} found with ID {1}'
-                    errors = [error(detail=detail.format(t, i))
+                    errors = [error(detail=f'No object of type {escape(t)} found with ID {escape(i)}')
                               for t, i in not_found]
                     return errors_response(404, errors)
             # Otherwise, it is a to-one relationship, so just get the single
@@ -426,30 +403,26 @@ class API(APIBase):
                 # If the client provided "null" for this relation,
                 # remove it by setting the attribute to ``None``.
                 if linkage is None:
-                    newvalue = None
+                    new_value = None
                 else:
                     expected_type = self.api_manager.collection_name(related_model)
                     type_ = linkage['type']
                     if type_ != expected_type:
-                        detail = 'Type must be {0}, not {1}'
-                        detail = detail.format(expected_type, type_)
-                        return error_response(409, detail=detail)
+                        return error_response(409, detail=f'Type must be {expected_type}, not {escape(type_)}')
                     id_ = linkage['id']
                     inst = get_by(self.session, related_model, id_, self.api_manager.primary_key_for(related_model))
                     # If the to-one relationship resource does not
                     # exist, return an error response.
                     if inst is None:
-                        detail = 'No object of type {0} found with ID {1}'
-                        detail = detail.format(type_, id_)
-                        return error_response(404, detail=detail)
-                    newvalue = inst
+                        return error_response(404, detail=f'No object of type {escape(type_)} found with ID {escape(id_)}')
+                    new_value = inst
             # Set the new value of the relationship.
             try:
                 # TODO Here if there are any extra attributes in
                 # newvalue[inst], (1) get the secondary association object for
                 # that relation, then (2) set the extra attributes on that
                 # object.
-                setattr(instance, linkname, newvalue)
+                setattr(instance, link_name, new_value)
             except self.validation_exceptions as exception:
                 return self._handle_validation_exception(exception)
 
@@ -459,8 +432,7 @@ class API(APIBase):
         # on the current model.
         for field in data:
             if not has_field(self.model, field):
-                detail = "Model does not have field '{0}'".format(field)
-                return error_response(400, detail=detail)
+                return error_response(400, detail=f"Model does not have field '{escape(field)}'")
         # Special case: if there are any dates, convert the string form of the
         # date into an instance of the Python ``datetime`` object.
         data = strings_to_datetimes(self.model, data)
@@ -499,26 +471,19 @@ class API(APIBase):
         # If no instance of the model exists with the specified instance ID,
         # return a 404 response.
         if instance is None:
-            detail = 'No instance with ID {0} in model {1}'.format(resource_id,
-                                                                   self.model)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No instance with ID {escape(resource_id)} in model {self.model}')
         # Unwrap the data from the collection name key.
         data = data.pop('data', {})
         if 'type' not in data:
-            message = 'Must specify correct data type'
-            return error_response(400, detail=message)
+            return error_response(400, detail='Must specify correct data type')
         if 'id' not in data:
-            message = 'Must specify resource ID'
-            return error_response(400, detail=message)
+            return error_response(400, detail='Must specify resource ID')
         type_ = data.pop('type')
         id_ = data.pop('id')
         if type_ != self.collection_name:
-            message = ('Type must be {0}, not'
-                       ' {1}').format(self.collection_name, type_)
-            return error_response(409, detail=message)
+            return error_response(409, detail=f'Type must be {self.collection_name}, not {escape(type_)}')
         if id_ != resource_id:
-            message = 'ID must be {0}, not {1}'.format(resource_id, id_)
-            return error_response(409, detail=message)
+            return error_response(409, detail=f'ID must be {resource_id}, not {escape(id_)}')
         result = self._update_instance(instance, data, resource_id)
         # If result is not None, that means there was an error updating the resource.
         if result is not None:

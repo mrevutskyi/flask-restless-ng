@@ -16,6 +16,7 @@ The main class in this module, :class:`FunctionAPI`, is a
 the result of evaluating a SQL function on a SQLAlchemy model.
 
 """
+from flask import escape
 from flask import json
 from flask import request
 from sqlalchemy.exc import OperationalError
@@ -42,23 +43,19 @@ class FunctionAPI(ModelView):
 
         """
         if 'functions' not in request.args:
-            detail = 'Must provide `functions` query parameter'
-            return error_response(400, detail=detail)
+            return error_response(400, detail='Must provide `functions` query parameter')
         functions = request.args.get('functions')
         try:
             data = json.loads(str(functions)) or []
-        except (TypeError, ValueError, OverflowError) as exception:
-            detail = 'Unable to decode JSON in `functions` query parameter'
-            return error_response(400, cause=exception, detail=detail)
+        except (TypeError, ValueError, OverflowError):
+            return error_response(400, detail='Unable to decode JSON in `functions` query parameter')
         try:
             result = evaluate_functions(self.session, self.model, data)
         except AttributeError as exception:
-            detail = 'No such field "{0}"'.format(exception.field)
-            return error_response(400, cause=exception, detail=detail)
+            return error_response(400, detail=f'No such field "{escape(exception.field)}"')
         except KeyError as exception:
             detail = str(exception)
-            return error_response(400, cause=exception, detail=detail)
+            return error_response(400, detail=detail)
         except OperationalError as exception:
-            detail = 'No such function "{0}"'.format(exception.function)
-            return error_response(400, cause=exception, detail=detail)
+            return error_response(400, detail=f'No such function "{exception.function}"')
         return dict(data=result), 200, {}

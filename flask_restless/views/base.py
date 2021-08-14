@@ -642,8 +642,7 @@ def error_response(status=400, cause=None, **kw):
     """
     if cause is not None:
         current_app.logger.exception(str(cause))
-    kw['status'] = status
-    return errors_response(status, [error(**kw)])
+    return errors_response(status, [error(status=status, **kw)])
 
 
 def errors_response(status, errors) -> Tuple[dict, int, dict]:
