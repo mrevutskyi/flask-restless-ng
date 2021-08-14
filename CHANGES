@@ -4,7 +4,7 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
-Next Version
+Version 2.2.5
 -------------
 - Fix for #27 'relationship with secondary generates incorrect query'
 
