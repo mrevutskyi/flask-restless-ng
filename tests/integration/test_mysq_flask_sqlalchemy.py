@@ -4,6 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 from flask_restless import APIManager
 
+pytestmark = pytest.mark.integration
+
 app = Flask(__name__)
 app.testing = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://db_user:password@localhost/flask_restless'
@@ -39,6 +41,39 @@ class Order(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
 
 
+# Models for Many-to-Many test case
+
+class Sheet(db.Model):
+    __tablename__ = "sheet"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    report = db.relationship(
+        "Report",
+        cascade="all, delete",
+        passive_deletes=True,
+        single_parent=True,
+        secondary="join(Report, Device, Report.device_id == Device.id)",
+        order_by="Device.parent_device_id",
+    )
+
+
+class Report(db.Model):
+    __tablename__ = "report"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    device_id = db.Column(db.Integer, db.ForeignKey("device.id", ondelete="CASCADE"), nullable=False)
+    sheet_id = db.Column(db.Integer, db.ForeignKey("sheet.id", ondelete="CASCADE"), nullable=False)
+
+
+class Device(db.Model):
+    __tablename__ = "device"
+
+    id = db.Column(db.Integer, primary_key=True)
+    parent_device_id = db.Column(db.Integer, db.ForeignKey("device.id", ondelete="CASCADE"), nullable=True)
+
+
 @pytest.fixture(scope='module')
 def api():
 
@@ -46,6 +81,10 @@ def api():
         api_manager = APIManager(app=app, session=db.session, url_prefix='', include_links=False)
         api_manager.create_api(Client, collection_name='clients', page_size=0)
         api_manager.create_api(Order, collection_name='orders', page_size=0)
+
+        api_manager.create_api(Report, collection_name='reports', page_size=0)
+        api_manager.create_api(Device, collection_name='devices', page_size=0)
+        api_manager.create_api(Sheet, collection_name='sheets', page_size=0)
 
         db.drop_all()
         db.create_all()
@@ -61,9 +100,31 @@ def api():
         yield app.test_client()
 
 
-@pytest.mark.integration
 def test_responses(api):
     response = api.get('/clients/1?include=orders,starred_orders')
     assert response.status_code == 200
     document = response.json
     assert len(document['included']) == 5
+
+
+def test_selectin_for_many_to_many(api):
+    """
+    Test case to catch https://github.com/mrevutskyi/flask-restless-ng/issues/27
+    """
+    db.session.add_all([
+        Device(id=1),
+        Device(id=2, parent_device_id=1),
+        Sheet(id=1),
+        Sheet(id=2)
+    ])
+    db.session.commit()
+    db.session.add_all([
+        Report(id=1, device_id=2, sheet_id=1),
+        Report(id=2, device_id=1, sheet_id=1),
+        Report(id=3, device_id=1, sheet_id=2),
+    ])
+    db.session.commit()
+
+    response = api.get('/sheets/1')
+    assert response.status_code == 200
+    assert len(response.json['data']['relationships']['report']['data']) == 2

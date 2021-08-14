@@ -4,6 +4,11 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Next Version
+-------------
+- Fix for #27 'relationship with secondary generates incorrect query'
+
+
 Version 2.2.4
 -------------
 - Do not log exceptions for user related errors (bad query, etc)

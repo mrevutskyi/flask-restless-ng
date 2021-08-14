@@ -90,14 +90,9 @@ class TestServerResponsibilities(ManagerTestBase):
         .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
-        data = {
-            'data': {
-                'type': 'person',
-            }
-        }
         headers = {'Content-Type': f'{CONTENT_TYPE}; version=1'}
         # flask 1.0.1 overrides headers when `json` parameter is used, so have to use json.dumps
-        response = self.app.post('/api/person', data=json.dumps(data), headers=headers)
+        response = self.app.post('/api/person', data=json.dumps({}), headers=headers)
         check_sole_error(response, 415, ['Content-Type', 'media type parameters'])
 
     def test_empty_accept_header(self):

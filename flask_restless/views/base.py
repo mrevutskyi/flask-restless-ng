@@ -1044,20 +1044,25 @@ class FetchView(View):
             filters=None
     ) -> Query:
 
-        def is_unsafe_to_selectload(attribute):
+        def is_safe_to_selectload(attribute):
             # SQLAlchemy does not build correct `selectinload` queries for models that have special select join
             try:
                 inspected_relationship = inspect(attribute)
+                if inspected_relationship.property.secondary:
+                    return False
                 if not isinstance(inspected_relationship.property.primaryjoin, BinaryExpression):
-                    return True
+                    return False
             except Exception:
+                # we do not have enough information, assume it's not safe
                 return False
+
+            return True
 
         join_paths = {path.split('.')[0] for path in include}
 
         for path in join_paths:
             attribute = getattr(self.model, path)
-            if is_unsafe_to_selectload(attribute):
+            if not is_safe_to_selectload(attribute):
                 continue
             if not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 query = query.options(selectinload(attribute))
@@ -1071,7 +1076,7 @@ class FetchView(View):
 
         for path in relationship_columns:
             attribute = getattr(self.model, path)
-            if is_unsafe_to_selectload(attribute):
+            if not is_safe_to_selectload(attribute):
                 continue
             if path not in join_paths and not is_proxy(attribute) and not isinstance(attribute.impl, DynamicAttributeImpl):
                 options = selectinload(attribute)
