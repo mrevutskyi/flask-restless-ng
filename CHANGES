@@ -4,6 +4,10 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Upcoming
+-------------
+- Escape user input in error messages to prevent potention server-side cross-site scripting
+
 Version 2.2.5
 -------------
 - Fix for #27 'relationship with secondary generates incorrect query'

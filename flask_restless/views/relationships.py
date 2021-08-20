@@ -16,6 +16,7 @@ The main class in this module, :class:`RelationshipAPI`, is a
 relationships according to the JSON API specification.
 
 """
+from flask import escape
 from flask import json
 from flask import request
 from werkzeug.exceptions import BadRequest
@@ -89,8 +90,7 @@ class RelationshipAPI(APIBase):
         primary_resource = get_by(self.session, self.model, resource_id,
                                   self.primary_key)
         if primary_resource is None:
-            detail = 'No resource with ID {0}'.format(resource_id)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No resource with ID {escape(resource_id)}')
         if is_like_list(primary_resource, relation_name):
             filters, sort = collection_parameters()
             return self._get_collection_helper(resource=primary_resource,
@@ -126,9 +126,7 @@ class RelationshipAPI(APIBase):
         # If no instance of the model exists with the specified instance ID,
         # return a 404 response.
         if instance is None:
-            detail = 'No instance with ID {0} in model {1}'
-            detail = detail.format(resource_id, self.model)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No instance with ID {escape(resource_id)} in model {self.model}')
         # If no such relation exists, return a 404.
         if not hasattr(instance, relation_name):
             detail = 'Model {0} has no relation named {1}'
@@ -140,11 +138,9 @@ class RelationshipAPI(APIBase):
         data = data.pop('data', {})
         for rel in data:
             if 'type' not in rel:
-                detail = 'Must specify correct data type'
-                return error_response(400, detail=detail)
+                return error_response(400, detail='Must specify correct data type')
             if 'id' not in rel:
-                detail = 'Must specify resource ID'
-                return error_response(400, detail=detail)
+                return error_response(400, detail='Must specify resource ID')
             type_ = rel['type']
             # The type name must match the collection name of model of the
             # relation.
@@ -154,9 +150,7 @@ class RelationshipAPI(APIBase):
             # Get the new objects to add to the relation.
             new_value = get_by(self.session, related_model, rel['id'], self.api_manager.primary_key_for(related_model))
             if new_value is None:
-                detail = ('No object of type {0} found with ID'
-                          ' {1}').format(type_, rel['id'])
-                return error_response(404, detail=detail)
+                return error_response(404, detail=f'No object of type {escape(type_)} found with ID {rel["id"]}')
             # Don't append a new value if it already exists in the to-many
             # relationship.
             if new_value not in related_value:
@@ -202,14 +196,10 @@ class RelationshipAPI(APIBase):
         # If no instance of the model exists with the specified instance ID,
         # return a 404 response.
         if instance is None:
-            detail = 'No instance with ID {0} in model {1}'
-            detail = detail.format(resource_id, self.model)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No instance with ID {escape(resource_id)} in model {self.model}')
         # If no such relation exists, return a 404.
         if not hasattr(instance, relation_name):
-            detail = 'Model {0} has no relation named {1}'
-            detail = detail.format(self.model, relation_name)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'Model {self.model} has no relation named {escape(relation_name)}')
         related_model = get_related_model(self.model, relation_name)
         # related_value = getattr(instance, relation_name)
 
@@ -234,11 +224,9 @@ class RelationshipAPI(APIBase):
                 replacement = []
                 for rel in data:
                     if 'type' not in rel:
-                        detail = 'Must specify correct data type'
-                        return error_response(400, detail=detail)
+                        return error_response(400, detail='Must specify correct data type')
                     if 'id' not in rel:
-                        detail = 'Must specify resource ID or IDs'
-                        return error_response(400, detail=detail)
+                        return error_response(400, detail='Must specify resource ID or IDs')
                     type_ = rel['type']
                     # The type name must match the collection name of model of
                     # the relation.
@@ -252,11 +240,9 @@ class RelationshipAPI(APIBase):
             # relationship.
             else:
                 if 'type' not in data:
-                    detail = 'Must specify correct data type'
-                    return error_response(400, detail=detail)
+                    return error_response(400, detail='Must specify correct data type')
                 if 'id' not in data:
-                    detail = 'Must specify resource ID or IDs'
-                    return error_response(400, detail=detail)
+                    return error_response(400, detail='Must specify resource ID or IDs')
                 type_ = data['type']
                 # The type name must match the collection name of model of the
                 # relation.
@@ -268,14 +254,13 @@ class RelationshipAPI(APIBase):
             # If the to-one relationship resource or any of the to-many
             # relationship resources do not exist, return an error response.
             if replacement is None:
-                detail = ('No object of type {0} found'
-                          ' with ID {1}').format(type_, id_)
+                detail = f'No object of type {escape(type_)} found with ID {escape(id_)}'
                 return error_response(404, detail=detail)
             if isinstance(replacement, list) and any(value is None for value in replacement):
                 not_found = (rel for rel, value in zip(data, replacement)
                              if value is None)
                 detail = 'No object of type {0} found with ID {1}'
-                errors = [error(detail=detail.format(rel['type'], rel['id']))
+                errors = [error(detail=detail.format(escape(rel['type']), escape(rel['id'])))
                           for rel in not_found]
                 return errors_response(404, errors)
             # Finally, set the relationship to have the new value.
@@ -311,8 +296,7 @@ class RelationshipAPI(APIBase):
             data = json.loads(request.get_data()) or {}
         except (BadRequest, TypeError, ValueError, OverflowError) as exception:
             # this also happens when request.data is empty
-            detail = 'Unable to decode data'
-            return error_response(400, cause=exception, detail=detail)
+            return error_response(400, cause=exception, detail='Unable to decode data')
         was_deleted = False
         for preprocessor in self.preprocessors['DELETE_RELATIONSHIP']:
             temp_result = preprocessor(instance_id=resource_id,
@@ -324,8 +308,7 @@ class RelationshipAPI(APIBase):
                           self.primary_key)
         # If no such relation exists, return an error to the client.
         if not hasattr(instance, relation_name):
-            detail = 'No such link: {0}'.format(relation_name)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'No such link: {escape(relation_name)}')
         # We assume that the relation is a to-many relation.
         related_model = get_related_model(self.model, relation_name)
         related_type = self.api_manager.collection_name(related_model)
@@ -343,9 +326,7 @@ class RelationshipAPI(APIBase):
             type_ = rel['type']
             id_ = rel['id']
             if type_ != related_type:
-                detail = ('Conflicting type: expected {0} but got type {1} for'
-                          ' linkage object with ID {2}')
-                detail = detail.format(related_type, type_, id_)
+                detail = f'Conflicting type: expected {related_type} but got type {escape(type_)} for linkage object with ID {escape(id_)}'
                 return error_response(409, detail=detail)
             resource = get_by(self.session, related_model, id_, self.api_manager.primary_key_for(related_model))
             if resource is None:
@@ -354,7 +335,7 @@ class RelationshipAPI(APIBase):
                 to_remove.append(resource)
         if not_found:
             detail = 'No resource of type {0} and ID {1} found'
-            errors = [error(detail=detail.format(t, i)) for t, i in not_found]
+            errors = [error(detail=detail.format(escape(t), escape(i))) for t, i in not_found]
             return errors_response(404, errors)
         # Remove each of the resources from the relation (if they are not
         # already absent).

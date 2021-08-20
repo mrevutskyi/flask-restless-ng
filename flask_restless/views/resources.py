@@ -483,7 +483,7 @@ class API(APIBase):
         if type_ != self.collection_name:
             return error_response(409, detail=f'Type must be {self.collection_name}, not {escape(type_)}')
         if id_ != resource_id:
-            return error_response(409, detail=f'ID must be {resource_id}, not {escape(id_)}')
+            return error_response(409, detail=f'ID must be {escape(resource_id)}, not {escape(id_)}')
         result = self._update_instance(instance, data, resource_id)
         # If result is not None, that means there was an error updating the resource.
         if result is not None:
