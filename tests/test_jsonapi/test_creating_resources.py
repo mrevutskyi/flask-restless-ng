@@ -17,19 +17,18 @@ of the JSON API specification.
 .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
 """
-import uuid
+import pytest
 
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy.orm import relationship
+from flask_restless import APIManager
 
-from ..helpers import GUID
-from ..helpers import ManagerTestBase
+from ..conftest import BaseTestClass
+from .models import Article
+from .models import Base
+from .models import Comment
+from .models import Person
 
 
-class TestCreatingResources(ManagerTestBase):
+class TestCreatingResources(BaseTestClass):
     """Tests corresponding to the `Creating Resources`_ section of the JSON API
     specification.
 
@@ -37,39 +36,15 @@ class TestCreatingResources(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        """Creates the database, the :class:`~flask.Flask` object, the
-        :class:`~flask_restless.manager.APIManager` for that application, and
-        creates the ReSTful API endpoints for the :class:`TestSupport.Person`
-        and :class:`TestSupport.Article` models.
-
-        """
-        super(TestCreatingResources, self).setUp()
-
-        class Article(self.Base):
-            __tablename__ = 'article'
-            id = Column(GUID, primary_key=True)
-
-        class Comment(self.Base):
-            __tablename__ = 'comment'
-            id = Column(Integer, primary_key=True)
-            author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person', backref='comments')
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-            age = Column(Integer)
-
-        self.Article = Article
-        self.Comment = Comment
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.create_api(Person, methods=['POST'])
-        self.manager.create_api(Article, methods=['POST'],
-                                allow_client_generated_ids=True)
-        self.manager.create_api(Comment)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Article, ['POST'], allow_client_generated_ids=True)
+        manager.create_api(Person, ['POST'])
+        manager.create_api(Comment)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_sparse_fieldsets_post(self):
         """Tests for restricting which fields are returned in a
@@ -84,18 +59,18 @@ class TestCreatingResources(ManagerTestBase):
 
         .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
         """
-        data = {'data':
-                    {'type': 'person',
-                     'attributes':
-                         {'name': 'foo',
-                          'age': 99}
-                     }
+        data = {
+            'data': {
+                'type': 'person',
+                'attributes': {
+                    'name': 'foo',
+                    'age': 99
                 }
+            }
+        }
         query_string = {'fields[person]': 'name'}
-        response = self.app.post('/api/person', json=data,
-                                 query_string=query_string)
-        document = response.json
-        person = document['data']
+        response = self.client.post('/api/person', json=data, query_string=query_string)
+        person = response.json['data']
         # ID and type must always be included.
         assert ['attributes', 'id', 'type'] == sorted(person)
         assert ['name'] == sorted(person['attributes'])
@@ -114,24 +89,22 @@ class TestCreatingResources(ManagerTestBase):
         .. _Inclusion of Related Resources: https://jsonapi.org/format/#fetching-includes
 
         """
-        comment = self.Comment(id=1)
-        self.session.add(comment)
+        self.session.add(Comment(id=1))
         self.session.commit()
-        data = {'data':
-                    {'type': 'person',
-                     'relationships':
-                         {'comments':
-                              {'data':
-                                   [{'type': 'comment', 'id': 1}]
-                               }
-                          }
-                     }
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'comments': {
+                        'data': [{'type': 'comment', 'id': 1}]
+                    }
                 }
+            }
+        }
         query_string = dict(include='comments')
-        response = self.app.post('/api/person', json=data, query_string=query_string)
+        response = self.client.post('/api/person', json=data, query_string=query_string)
         assert response.status_code == 201
-        document = response.json
-        included = document['included']
+        included = response.json['included']
         assert len(included) == 1
         comment = included[0]
         assert comment['type'] == 'comment'
@@ -146,8 +119,13 @@ class TestCreatingResources(ManagerTestBase):
         .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
         """
-        data = dict(data=dict(type='person', name='foo'))
-        response = self.app.post('/api/person', json=data)
+        data = {
+            'data': {
+                'type': 'person',
+                'name': 'foo'
+            }
+        }
+        response = self.client.post('/api/person', json=data)
         assert response.status_code == 201
         location = response.headers['Location']
         # TODO Technically, this test shouldn't know beforehand where the
@@ -155,13 +133,10 @@ class TestCreatingResources(ManagerTestBase):
         # here, assuming that the implementation of the server creates a new
         # Person object with ID 1, which is bad style.
         assert location.endswith('/api/person/1')
-        document = response.json
-        person = document['data']
+        person = response.json['data']
         assert person['type'] == 'person'
         assert person['id'] == '1'
         assert person['attributes']['name'] == 'foo'
-        # # No self link will exist because no GET endpoint was created.
-        # assert person['links']['self'] == location
 
     def test_without_type(self):
         """Tests for an error response if the client fails to specify the type
@@ -173,11 +148,10 @@ class TestCreatingResources(ManagerTestBase):
         .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
         """
-        data = dict(data=dict(name='foo'))
-        response = self.app.post('/api/person', json=data)
+        data = {'data': {'name': 'foo'}}
+        response = self.client.post('/api/person', json=data)
         assert response.status_code == 400
-        # TODO test for error details (for example, a message specifying that
-        # type is missing)
+        assert 'missing "type"' in response.json['errors'][0]['detail']
 
     def test_client_generated_id(self):
         """Tests that the client can specify a UUID to become the ID of the
@@ -189,36 +163,24 @@ class TestCreatingResources(ManagerTestBase):
         .. _Client-Generated IDs: https://jsonapi.org/format/#crud-creating-client-ids
 
         """
-        generated_id = uuid.uuid1()
-        data = dict(data=dict(type='article', id=generated_id))
-        response = self.app.post('/api/article', json=data)
-        # Our server always responds with 201 when a client-generated ID is
-        # specified. It does not return a 204.
-        #
-        # TODO should we reverse that and only return 204?
+        generated_id = 111
+        data = {'data': {'type': 'article', 'id': generated_id}}
+        response = self.client.post('/api/article', json=data)
         assert response.status_code == 201
-        document = response.json
-        article = document['data']
+        article = response.json['data']
         assert article['type'] == 'article'
         assert article['id'] == str(generated_id)
 
     def test_client_generated_id_forbidden(self):
-        """Tests that the client can specify a UUID to become the ID of the
-        created object.
-
-        For more information, see the `Client-Generated IDs`_ section of the
-        JSON API specification.
+        """Tests that the server returns correct response code if client provides 'id'
+        when Client-Generated IDs are disabled
 
         .. _Client-Generated IDs: https://jsonapi.org/format/#crud-creating-client-ids
-
         """
-        self.manager.create_api(self.Article, url_prefix='/api2',
-                                methods=['POST'])
-        data = dict(data=dict(type='article', id=uuid.uuid1()))
-        response = self.app.post('/api2/article', json=data)
+        data = {'data': {'type': 'article', 'id': 13}}
+        response = self.client.post('/api/person', json=data)
         assert response.status_code == 403
-        # TODO test for error details (for example, a message specifying that
-        # client-generated IDs are not allowed).
+        assert 'Server does not allow client-generated IDS' in response.json['errors'][0]['detail']
 
     def test_type_conflict(self):
         """Tests that if a client specifies a type that does not match the
@@ -231,11 +193,10 @@ class TestCreatingResources(ManagerTestBase):
 
         """
 
-        data = dict(data=dict(type='bogustype', name='foo'))
-        response = self.app.post('/api/person', json=data)
+        data = {'data': {'type': 'bogus_type', 'name': 'foo'}}
+        response = self.client.post('/api/person', json=data)
         assert response.status_code == 409
-        # TODO test for error details (for example, a message specifying that
-        # client-generated IDs are not allowed).
+        assert 'expected type "person" but got type "bogus_type"' in response.json['errors'][0]['detail']
 
     def test_id_conflict(self):
         """Tests that if a client specifies a client-generated ID that already
@@ -247,11 +208,10 @@ class TestCreatingResources(ManagerTestBase):
         .. _409 Conflict: https://jsonapi.org/format/#crud-creating-responses-409
 
         """
-        generated_id = uuid.uuid1()
-        self.session.add(self.Article(id=generated_id))
+        generated_id = 112
+        self.session.add(Article(id=generated_id))
         self.session.commit()
-        data = dict(data=dict(type='article', id=generated_id))
-        response = self.app.post('/api/article', json=data)
+        data = {'data': {'type': 'article', 'id': '112'}}
+        response = self.client.post('/api/article', json=data)
         assert response.status_code == 409
-        # TODO test for error details (for example, a message specifying that
-        # client-generated IDs are not allowed).
+        assert 'UNIQUE constraint failed' in response.json['errors'][0]['detail']

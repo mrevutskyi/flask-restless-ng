@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
+from .helpers import force_content_type_jsonapi
 from .helpers import validate_schema
 
 
@@ -31,6 +32,7 @@ class BaseTestClass:
         app.config['TESTING'] = True
         self.app = app
         self.client = app.test_client()
+        force_content_type_jsonapi(self.client)
         self.session = self.scoped_session_cls()
 
     def teardown_method(self):
