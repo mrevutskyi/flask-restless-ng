@@ -121,17 +121,14 @@ class RelationshipAPI(APIBase):
             # See the note under the preprocessor in the get() method.
             if temp_result is not None:
                 resource_id, relation_name = temp_result
-        instance = get_by(self.session, self.model, resource_id,
-                          self.primary_key)
+        instance = get_by(self.session, self.model, resource_id, self.primary_key)
         # If no instance of the model exists with the specified instance ID,
         # return a 404 response.
         if instance is None:
             return error_response(404, detail=f'No instance with ID {escape(resource_id)} in model {self.model}')
         # If no such relation exists, return a 404.
         if not hasattr(instance, relation_name):
-            detail = 'Model {0} has no relation named {1}'
-            detail = detail.format(self.model, relation_name)
-            return error_response(404, detail=detail)
+            return error_response(404, detail=f'Model {self.model} has no relation named {escape(relation_name)}')
         related_model = get_related_model(self.model, relation_name)
         related_value = getattr(instance, relation_name)
         # Unwrap the data from the request.
