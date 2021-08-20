@@ -254,8 +254,7 @@ class API(APIBase):
             # See the note under the preprocessor in the get() method.
             if temp_result is not None:
                 resource_id = temp_result
-        instance = get_by(self.session, self.model, resource_id,
-                          self.primary_key)
+        instance = get_by(self.session, self.model, resource_id, self.primary_key)
         if instance is None:
             return error_response(404, detail=f'No resource found with ID {escape(resource_id)}')
         self.session.delete(instance)
@@ -263,9 +262,6 @@ class API(APIBase):
         self.session.commit()
         for postprocessor in self.postprocessors['DELETE_RESOURCE']:
             postprocessor(was_deleted=was_deleted)
-        if not was_deleted:
-            detail = 'There was no instance to delete.'
-            return error_response(404, detail=detail)
         return {}, 204, {}
 
     def post(self):

@@ -17,13 +17,16 @@ of the JSON API specification.
 .. _Deleting Resources: https://jsonapi.org/format/#crud-deleting
 
 """
-from sqlalchemy import Column
-from sqlalchemy import Integer
+import pytest
 
-from ..helpers import ManagerTestBase
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Base
+from .models import Person
 
 
-class TestDeletingResources(ManagerTestBase):
+class TestDeletingResources(BaseTestClass):
     """Tests corresponding to the `Deleting Resources`_ section of the JSON API
     specification.
 
@@ -31,23 +34,13 @@ class TestDeletingResources(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        """Creates the database, the :class:`~flask.Flask` object, the
-        :class:`~flask_restless.manager.APIManager` for that application, and
-        creates the ReSTful API endpoints for the :class:`TestSupport.Person`
-        class.
-
-        """
-        # create the database
-        super(TestDeletingResources, self).setUp()
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.create_api(self.Person, methods=['DELETE'])
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Person, ['DELETE'])
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_delete(self):
         """Tests for deleting a resource.
@@ -58,12 +51,11 @@ class TestDeletingResources(ManagerTestBase):
         .. _Deleting Resources: https://jsonapi.org/format/#crud-deleting
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        response = self.app.delete('/api/person/1')
+        response = self.client.delete('/api/person/1')
         assert response.status_code == 204
-        assert self.session.query(self.Person).count() == 0
+        assert self.session.query(Person).count() == 0
 
     def test_delete_nonexistent(self):
         """Tests that deleting a nonexistent resource causes a
@@ -75,5 +67,5 @@ class TestDeletingResources(ManagerTestBase):
         .. _404 Not Found: https://jsonapi.org/format/#crud-deleting-responses-404
 
         """
-        response = self.app.delete('/api/person/1')
+        response = self.client.delete('/api/person/1')
         assert response.status_code == 404
