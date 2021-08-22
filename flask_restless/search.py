@@ -404,6 +404,12 @@ def search(session, model, filters=None, sort=None, _initial_query=None):
 
     query = query.filter(*filters)
 
+    def get_field(obj, name):
+        try:
+            return getattr(obj, name)
+        except AttributeError:
+            raise BadRequest(details=f'Invalid sorting: No such field {name}')
+
     # Order the query. If no order field is specified, order by primary
     # key.
     # if not _ignore_sort:
@@ -413,12 +419,12 @@ def search(session, model, filters=None, sort=None, _initial_query=None):
             if '.' in field_name:
                 field_name, field_name_in_relation = field_name.split('.')
                 relation_model = aliased(get_related_model(model, field_name))
-                field = getattr(relation_model, field_name_in_relation)
+                field = get_field(relation_model, field_name_in_relation)
                 direction = getattr(field, direction_name)
                 query = query.join(relation_model)
                 query = query.order_by(direction())
             else:
-                field = getattr(model, field_name)
+                field = get_field(model, field_name)
                 direction = getattr(field, direction_name)
                 query = query.order_by(direction())
     else:

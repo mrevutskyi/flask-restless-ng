@@ -1118,6 +1118,8 @@ class FetchCollection(FetchView):
         page_number = int(request.args.get(PAGE_NUMBER_PARAM, 1))
         if page_number < 0:
             raise BadRequest(details='Page number can not be negative')
+        if page_size == 0 and page_number > 1:
+            raise BadRequest(details='Page number can not be used with with page size 0')
 
         serializer = self.api_manager.serializer_for(self.model)
         query = search(self.session, self.model, filters=filters, sort=sort)

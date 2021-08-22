@@ -1,11 +1,13 @@
-from sqlalchemy import Column
-from sqlalchemy import Integer
+import pytest
 
-from ..helpers import ManagerTestBase
-from ..helpers import validate_schema
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Base
+from .models import Person
 
 
-class TestPagination(ManagerTestBase):
+class TestPagination(BaseTestClass):
     """Tests for pagination links in fetched documents.
 
     For more information, see the `Pagination`_ section of the JSON API
@@ -15,16 +17,15 @@ class TestPagination(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        super(TestPagination, self).setUp()
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Person)
+        self.manager = manager
 
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.create_api(Person)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_top_level_pagination_link(self):
         """Tests that there are top-level pagination links by default.
@@ -35,9 +36,7 @@ class TestPagination(ManagerTestBase):
         .. _Top Level: https://jsonapi.org/format/#document-top-level
 
         """
-        response = self.app.get('/api/person')
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person')
         links = document['links']
         assert 'first' in links
         assert 'last' in links
@@ -54,11 +53,9 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
+        self.session.bulk_save_objects([Person(pk=i) for i in range(25)])
         self.session.commit()
-        response = self.app.get('/api/person')
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person')
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -79,12 +76,10 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
+        self.session.bulk_save_objects([Person(pk=i) for i in range(25)])
         self.session.commit()
         query_string = {'page[number]': 2, 'page[size]': 3}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -106,12 +101,10 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person(id=i) for i in range(25)])
+        self.session.bulk_save_objects([Person(pk=i) for i in range(25)])
         self.session.commit()
         query_string = {'page[number]': 2}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -132,12 +125,10 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person(id=i) for i in range(1, 41)])
+        self.session.bulk_save_objects([Person(pk=i) for i in range(1, 41)])
         self.session.commit()
-        query_string = {'sort': '-id', 'page[number]': 2}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        query_string = {'sort': '-pk', 'page[number]': 2}
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         # In reverse order, the first page should have Person instances with
         # IDs 40 through 31, so the second page should have Person instances
         # with IDs 30 through 21.
@@ -149,19 +140,19 @@ class TestPagination(ManagerTestBase):
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
-        assert 'sort=-id' in pagination['first']
+        assert 'sort=-pk' in pagination['first']
 
         assert '/api/person?' in pagination['last']
         assert 'page[number]=4' in pagination['last']
-        assert 'sort=-id' in pagination['last']
+        assert 'sort=-pk' in pagination['last']
 
         assert '/api/person?' in pagination['prev']
         assert 'page[number]=1' in pagination['prev']
-        assert 'sort=-id' in pagination['prev']
+        assert 'sort=-pk' in pagination['prev']
 
         assert '/api/person?' in pagination['next']
         assert 'page[number]=3' in pagination['next']
-        assert 'sort=-id' in pagination['next']
+        assert 'sort=-pk' in pagination['next']
 
     def test_client_size_only(self):
         """Tests that a request that specifies only the page size returns the
@@ -173,12 +164,10 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
         query_string = {'page[size]': 5}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -199,12 +188,9 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
-        query_string = {'page[number]': 3}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string={'page[number]': 3})
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -224,13 +210,11 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
-        self.manager.create_api(self.Person, url_prefix='/api2', page_size=5)
+        self.manager.create_api(Person, url_prefix='/api2', page_size=5)
         query_string = {'page[number]': 3}
-        response = self.app.get('/api2/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api2/person', query_string=query_string)
         pagination = document['links']
         assert '/api2/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -251,12 +235,10 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
-        self.manager.create_api(self.Person, url_prefix='/api2', page_size=0)
-        response = self.app.get('/api2/person')
-        document = response.json
-        validate_schema(document)
+        self.manager.create_api(Person, url_prefix='/api2', page_size=0)
+        document = self.fetch_and_validate('/api2/person')
         pagination = document['links']
         assert 'first' not in pagination
         assert 'last' not in pagination
@@ -264,30 +246,14 @@ class TestPagination(ManagerTestBase):
         assert 'next' not in pagination
         assert len(document['data']) == 25
 
-    def test_disable_pagination_ignore_client(self):
-        """Tests that disabling default pagination on the server side ignores
-        client page number requests.
-
-        For more information, see the `Pagination`_ section of the JSON API
-        specification.
-
-        .. _Pagination: https://jsonapi.org/format/#fetching-pagination
-
-        """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+    def test_disable_pagination_raiser_client_error(self):
+        """Tests that disabling default pagination on the server raises an error on client page number requests."""
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
-        self.manager.create_api(self.Person, url_prefix='/api2', page_size=0)
+        self.manager.create_api(Person, url_prefix='/api2', page_size=0)
         query_string = {'page[number]': 2}
-        response = self.app.get('/api2/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
-        pagination = document['links']
-        assert 'first' not in pagination
-        assert 'last' not in pagination
-        assert 'prev' not in pagination
-        assert 'next' not in pagination
-        assert len(document['data']) == 25
-        # TODO Should there be an error here?
+        self.fetch_and_validate('/api2/person', query_string=query_string, expected_response_code=400,
+                                error_msg='Page number can not be used with with page size 0')
 
     def test_max_page_size(self):
         """Tests that the client cannot exceed the maximum page size.
@@ -298,15 +264,12 @@ class TestPagination(ManagerTestBase):
         .. _Pagination: https://jsonapi.org/format/#fetching-pagination
 
         """
-        people = [self.Person() for _ in range(25)]
-        self.session.add_all(people)
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
-        self.manager.create_api(self.Person, url_prefix='/api2',
-                                max_page_size=15)
+        self.manager.create_api(Person, url_prefix='/api2', max_page_size=15)
         query_string = {'page[size]': 20}
-        response = self.app.get('/api2/person', query_string=query_string)
-        assert response.status_code == 400
-        # TODO check the error message here.
+        self.fetch_and_validate('/api2/person', query_string=query_string, expected_response_code=400,
+                                error_msg="Page size must not exceed the server's maximum")
 
     def test_negative_page_size(self):
         """Tests that the client cannot specify a negative page size.
@@ -318,9 +281,8 @@ class TestPagination(ManagerTestBase):
 
         """
         query_string = {'page[size]': -1}
-        response = self.app.get('/api/person', query_string=query_string)
-        assert response.status_code == 400
-        # TODO check the error message here.
+        self.fetch_and_validate('/api/person', query_string=query_string, expected_response_code=400,
+                                error_msg='Page size can not be negative')
 
     def test_negative_page_number(self):
         """Tests that the client cannot specify a negative page number.
@@ -332,9 +294,8 @@ class TestPagination(ManagerTestBase):
 
         """
         query_string = {'page[number]': -1}
-        response = self.app.get('/api/person', query_string=query_string)
-        assert response.status_code == 400
-        # TODO check the error message here.
+        self.fetch_and_validate('/api/person', query_string=query_string, expected_response_code=400,
+                                error_msg='Page number can not be negative')
 
     def test_headers(self):
         """Tests that paginated requests come with ``Link`` headers.
@@ -343,10 +304,10 @@ class TestPagination(ManagerTestBase):
         other pagination test methods anyway.)
 
         """
-        self.session.bulk_save_objects([self.Person() for _ in range(25)])
+        self.session.bulk_save_objects([Person() for _ in range(25)])
         self.session.commit()
         query_string = {'page[number]': 4, 'page[size]': 3}
-        response = self.app.get('/api/person', query_string=query_string)
+        response = self.client.get('/api/person', query_string=query_string)
         links = response.headers['Link'].split(',')
         assert any(all(('/api/person?' in link, 'page[number]=1' in link,
                         'page[size]=3' in link, 'rel="first"' in link))

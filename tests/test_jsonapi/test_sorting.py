@@ -185,3 +185,15 @@ class TestSorting(ManagerTestBase):
         articles = document['data']
         article_ids = [article['id'] for article in articles]
         assert ['4', '3', '2', '1', '0'] == article_ids
+
+    def test_bad_request_on_incorrect_sorting_field(self):
+        query_string = dict(sort='unknown')
+        response = self.app.get('/api/person', query_string=query_string)
+        assert response.status_code == 400
+        # TODO: test message response
+
+    def test_bad_request_on_incorrect_sorting_relationship_field(self):
+        query_string = dict(sort='articles.unknown')
+        response = self.app.get('/api/person', query_string=query_string)
+        assert response.status_code == 400
+        # TODO: test message response

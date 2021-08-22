@@ -42,27 +42,32 @@ class BaseTestClass:
     def teardown_method(self):
         self.session.close()
 
-    def _decode_and_validate(self, response, expected_response_code):
+    @staticmethod
+    def _decode_and_validate(response, expected_response_code, error_msg=None):
         assert response.status_code == expected_response_code
         document = response.json
         validate_schema(document)
+        if error_msg:
+            assert error_msg in document['errors'][0]['detail']
 
         return document
 
-    def fetch_and_validate(self, uri: str, expected_response_code: int = 200):
-        response = self.client.get(uri)
-        return self._decode_and_validate(response, expected_response_code)
+    def fetch_and_validate(
+            self,
+            uri: str, expected_response_code: int = 200,
+            query_string: Optional[Dict[str, Any]] = None,
+            error_msg: Optional[str] = None
+    ):
+        response = self.client.get(uri, query_string=query_string)
+        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
 
     def post_and_validate(
             self,
             uri: str,
             json: Dict[str, Any],
             expected_response_code: int = 201,
-            query_string: Optional[Dict[str, str]] = None,
+            query_string: Optional[Dict[str, Any]] = None,
             error_msg: Optional[str] = None
     ):
         response = self.client.post(uri, json=json, query_string=query_string)
-        document = self._decode_and_validate(response, expected_response_code)
-        if error_msg:
-            assert error_msg in document['errors'][0]['detail']
-        return document
+        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
