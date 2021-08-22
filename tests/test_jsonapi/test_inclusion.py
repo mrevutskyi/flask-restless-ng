@@ -1,41 +1,12 @@
 import pytest
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy.orm import backref
-from sqlalchemy.orm import relationship
 
 from flask_restless import APIManager
 
 from ..conftest import BaseTestClass
-from ..helpers import DeclarativeMeta
-from ..helpers import declarative_base
-
-Base: DeclarativeMeta = declarative_base()  # type: ignore
-
-
-class Article(Base):
-    __tablename__ = 'article'
-    id = Column(Integer, primary_key=True)
-    author_id = Column(Integer, ForeignKey('person.id'))
-
-
-class Comment(Base):
-    __tablename__ = 'comment'
-    id = Column(Integer, primary_key=True)
-    author_id = Column(Integer, ForeignKey('person.id'))
-    article_id = Column(Integer, ForeignKey('article.id'))
-
-    author = relationship('Person', backref=backref('comments'))
-    article = relationship(Article, backref=backref('comments'))
-
-
-class Person(Base):
-    __tablename__ = 'person'
-    id = Column(Integer, primary_key=True)
-    name = Column(Unicode)
-    articles = relationship('Article', backref='author')
+from .models import Article
+from .models import Base
+from .models import Comment
+from .models import Person
 
 
 class TestInclusion(BaseTestClass):
@@ -66,7 +37,7 @@ class TestInclusion(BaseTestClass):
 
         """
 
-        self.session.add_all([Person(id=1), Article(id=1, author_id=1)])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
         document = self.fetch_and_validate('/api/person/1')
         articles = document['data']['relationships']['articles']['data']
@@ -82,7 +53,7 @@ class TestInclusion(BaseTestClass):
         .. _Inclusion of Related Resources: https://jsonapi.org/format/#fetching-includes
 
         """
-        self.session.add_all([Person(id=1), Article(id=1, author_id=1)])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
         self.manager.create_api(Person, includes=['articles'], url_prefix='/api2')
         # In the alternate API, articles are included by default in compound documents.
@@ -103,7 +74,7 @@ class TestInclusion(BaseTestClass):
 
         """
         self.session.add_all([
-            Person(id=1, name=u'foo'),
+            Person(pk=1, name=u'foo'),
             Article(id=1, author_id=1),
             Article(id=2, author_id=1),
             Comment(author_id=1)
@@ -116,7 +87,7 @@ class TestInclusion(BaseTestClass):
         assert ['1', '2'] == sorted(resource['id'] for resource in document['included'])
 
     def test_include_for_collection(self):
-        self.session.add_all([Person(id=1, name=u'foo'), Person(id=2, name=u'bar'), Person(id=3, name=u'baz')])
+        self.session.add_all([Person(pk=1, name=u'foo'), Person(pk=2, name=u'bar'), Person(pk=3, name=u'baz')])
         self.session.add_all([Article(id=1, author_id=1), Article(id=2, author_id=2), Article(id=3, author_id=3)])
         self.session.add_all([Comment(id=1, author_id=1, article_id=1)])
         self.session.commit()
@@ -132,7 +103,7 @@ class TestInclusion(BaseTestClass):
 
         """
         self.session.add_all([
-            Person(id=1, name=u'foo'),
+            Person(pk=1, name=u'foo'),
             Article(id=2, author_id=1),
             Comment(id=3, author_id=1)
         ])
@@ -170,8 +141,8 @@ class TestInclusion(BaseTestClass):
 
         """
         self.session.add_all([
-            Person(id=1),
-            Person(id=2),
+            Person(pk=1),
+            Person(pk=2),
             Article(id=1),
             Comment(id=1, article_id=1, author_id=1),
             Comment(id=2, article_id=1, author_id=2),
@@ -197,7 +168,7 @@ class TestInclusion(BaseTestClass):
 
         """
         self.session.add_all([
-            Person(id=1),
+            Person(pk=1),
             Article(id=2, author_id=1),
             Comment(id=3, author_id=1)
         ])
