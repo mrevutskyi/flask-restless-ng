@@ -371,44 +371,72 @@
       "properties": {
         "id": {
           "description": "A unique identifier for this particular occurrence of the problem.",
-          "type": "string",
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ],
           "$comment": "The spec doesn't specify that this MUST be a string, so this could be changed to additionally allow numbers"
         },
         "links": {
-          "$ref": "#/definitions/links"
+          "oneOf": [
+            {"$ref": "#/definitions/links"},
+            {"type": "null"}
+          ]
         },
         "status": {
           "description": "The HTTP status code applicable to this problem, expressed as a string value.",
-          "type": "string"
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
         },
         "code": {
           "description": "An application-specific error code, expressed as a string value.",
-          "type": "string"
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
         },
         "title": {
           "description": "A short, human-readable summary of the problem. It **SHOULD NOT** change from occurrence to occurrence of the problem, except for purposes of localization.",
-          "type": "string"
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
         },
         "detail": {
           "description": "A human-readable explanation specific to this occurrence of the problem.",
-          "type": "string"
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
         },
         "source": {
-          "type": "object",
-          "properties": {
-            "pointer": {
-              "description": "A JSON Pointer [RFC6901] to the associated entity in the request document [e.g. \"/data\" for a primary data object, or \"/data/attributes/title\" for a specific attribute].",
-              "type": "string",
-              "pattern": "^(?:\\/(?:[^~/]|~0|~1)*)*$"
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "pointer": {
+                  "description": "A JSON Pointer [RFC6901] to the associated entity in the request document [e.g. \"/data\" for a primary data object, or \"/data/attributes/title\" for a specific attribute].",
+                  "type": "string",
+                  "pattern": "^(?:\\/(?:[^~/]|~0|~1)*)*$"
+                },
+                "parameter": {
+                  "description": "A string indicating which query parameter caused the error.",
+                  "type": "string"
+                }
+              }
             },
-            "parameter": {
-              "description": "A string indicating which query parameter caused the error.",
-              "type": "string"
+            {
+              "type": "null"
             }
-          }
+          ]
         },
         "meta": {
-          "$ref": "#/definitions/meta"
+          "oneOf": [
+            {"$ref": "#/definitions/meta"},
+            {"type": "null"}
+          ]
         }
       },
       "additionalProperties": false

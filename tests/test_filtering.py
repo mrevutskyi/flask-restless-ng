@@ -160,8 +160,7 @@ class TestFiltering(SearchTestBase):
 
         """
         query_string = {'filter[objects]': 'bogus'}
-        response = self.app.get('/api/person/1/articles',
-                                query_string=query_string)
+        response = self.app.get('/api/person/1/articles', query_string=query_string)
         check_sole_error(response, 400, ['Unable to decode', 'filter object'])
 
     def test_bad_filter_relationship(self):

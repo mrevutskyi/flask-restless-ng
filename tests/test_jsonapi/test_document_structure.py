@@ -19,17 +19,19 @@ of the JSON API specification.
 
 """
 import string
-from urllib.parse import urlparse
 
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy.orm import relationship
+import pytest
 
-from ..helpers import ManagerTestBase
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Article
+from .models import Base
+from .models import Comment
+from .models import Person
 
 
-class TestDocumentStructure(ManagerTestBase):
+class TestDocumentStructure(BaseTestClass):
     """Tests corresponding to the `Document Structure`_ section of the JSON API
     specification.
 
@@ -37,57 +39,15 @@ class TestDocumentStructure(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        """Creates the database, the :class:`~flask.Flask` object, the
-        :class:`~flask_restless.manager.APIManager` for that application, and
-        creates the ReSTful API endpoints for the :class:`TestSupport.Person`
-        and :class:`TestSupport.Article` models.
-
-        """
-        super(TestDocumentStructure, self).setUp()
-
-        class Article(self.Base):
-            __tablename__ = 'article'
-            id = Column(Integer, primary_key=True)
-            author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person', backref='articles')
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-
-        class Comment(self.Base):
-            __tablename__ = 'comment'
-            id = Column(Integer, primary_key=True)
-            author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person', backref='comments')
-
-        self.Article = Article
-        self.Comment = Comment
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.include_links = True
-        self.manager.create_api(Article)
-        self.manager.create_api(Comment)
-        self.manager.create_api(Person, methods=['GET', 'POST'])
-
-    def test_ignore_additional_members(self):
-        """Tests that the server ignores any additional top-level members.
-
-        For more information, see the `Document Structure`_ section of the JSON
-        API specification.
-
-        .. _Document Structure: https://jsonapi.org/format/#document-structure
-
-        """
-        # The key `bogus` is unknown to the JSON API specification, and
-        # therefore should be ignored.
-        data = dict(data=dict(type='person'), bogus=True)
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        assert 'errors' not in document
-        assert self.session.query(self.Person).count() == 1
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session, include_links=True)
+        manager.create_api(Article)
+        manager.create_api(Person, methods=['GET', 'POST'])
+        manager.create_api(Comment)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_allowable_top_level_keys(self):
         """Tests that a response contains at least one of the top-level
@@ -99,9 +59,9 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Top Level: https://jsonapi.org/format/#document-top-level
 
         """
-        response = self.app.get('/api/person')
-        allowable_keys = ('data', 'errors', 'meta')
-        assert any(key in response.json for key in allowable_keys)
+        document = self.fetch_and_validate('/api/person')
+        allowed_keys = ('data', 'errors', 'meta')
+        assert any(key in document for key in allowed_keys)
 
     def test_no_data_and_errors_good_request(self):
         """Tests that a response to a valid request does not contain
@@ -114,8 +74,8 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Top Level: https://jsonapi.org/format/#document-top-level
 
         """
-        response = self.app.get('/api/person')
-        assert not all(k in response.json for k in ('data', 'errors'))
+        document = self.fetch_and_validate('/api/person')
+        assert all(key in document for key in ('data', 'errors')) is False
 
     def test_no_data_and_errors_bad_request(self):
         """Tests that a response to an invalid request does not contain
@@ -128,14 +88,13 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Top Level: https://jsonapi.org/format/#document-top-level
 
         """
-        response = self.app.get('/api/person/boguskey')
-        assert not all(k in response.json for k in ('data', 'errors'))
+        document = self.fetch_and_validate('/api/person/bogus_key', expected_response_code=404)
+        assert all(key in document for key in ('data', 'errors')) is False
 
     def test_errors_top_level_key(self):
         """Tests that errors appear under a top-level key ``errors``."""
-        response = self.app.get('/api/person/boguskey')
-        data = response.json
-        assert 'errors' in data
+        document = self.fetch_and_validate('/api/person/bogus_key', expected_response_code=404)
+        assert 'errors' in document
 
     def test_no_other_top_level_keys(self):
         """Tests that no there are no other alphanumeric top-level keys in the
@@ -147,29 +106,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Top Level: https://jsonapi.org/format/#document-structure-top-level
 
         """
-        response = self.app.get('/api/person')
-        document = response.json
+        document = self.fetch_and_validate('/api/person')
         allowed = ('data', 'errors', 'meta', 'jsonapi', 'links', 'included')
         alphanumeric = string.ascii_letters + string.digits
-        assert all(d in allowed or d[0] not in alphanumeric for d in document)
-
-    def test_resource_attributes(self):
-        """Test that a resource has the required top-level keys.
-
-        For more information, see the `Resource Objects`_ section of the JSON
-        API specification.
-
-        .. _Resource Objects: https://jsonapi.org/format/#document-resource-objects
-
-        """
-        person = self.Person(id=1)
-        self.session.add(person)
-        self.session.commit()
-        response = self.app.get('/api/person/1')
-        document = response.json
-        person = document['data']
-        assert person['id'] == '1'
-        assert person['type'] == 'person'
+        assert all(key in allowed or key[0] not in alphanumeric for key in document)
 
     def test_no_foreign_keys(self):
         """By default, foreign keys should not appear in the representation of
@@ -181,11 +121,9 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Object Attributes: https://jsonapi.org/format/#document-resource-object-attributes
 
         """
-        article = self.Article(id=1)
-        self.session.add(article)
+        self.session.add(Comment(id=1))
         self.session.commit()
-        response = self.app.get('/api/article/1')
-        document = response.json
+        document = self.fetch_and_validate('/api/comment/1')
         article = document['data']
         assert 'attributes' not in article
         assert 'author_id' not in article
@@ -200,11 +138,9 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Object Relationships: https://jsonapi.org/format/#document-resource-object-relationships
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        response = self.app.get('/api/person/1')
-        document = response.json
+        document = self.fetch_and_validate('/api/person/1')
         articles = document['data']['relationships']['articles']
         assert any(key in articles for key in ('data', 'links', 'meta'))
 
@@ -218,11 +154,9 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Object Relationships: https://jsonapi.org/format/#document-resource-object-relationships
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        response = self.app.get('/api/person/1')
-        document = response.json
+        document = self.fetch_and_validate('/api/person/1')
         articles = document['data']['relationships']['articles']
         links = articles['links']
         assert any(key in links for key in ('self', 'related'))
@@ -237,16 +171,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Object Relationships: https://jsonapi.org/format/#document-resource-object-relationships
 
         """
-        person = self.Person(id=1)
-        article = self.Article(id=1)
-        article.author = person
-        self.session.add_all([person, article])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
-        response = self.app.get('/api/article/1')
-        document = response.json
-        article = document['data']
-        author = article['relationships']['author']
-        relationship_url = author['links']['self']
+        document = self.fetch_and_validate('/api/article/1')
+        relationship_url = document['data']['relationships']['author']['links']['self']
         assert relationship_url.endswith('/api/article/1/relationships/author')
 
     def test_related_resource_url_to_one(self):
@@ -259,26 +187,18 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Related Resource Links: https://jsonapi.org/format/#document-resource-object-related-resource-links
 
         """
-        person = self.Person(id=1)
-        article = self.Article(id=1)
-        article.author = person
-        self.session.add_all([person, article])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
         # Get a resource that has links.
-        response = self.app.get('/api/article/1')
-        document = response.json
-        article = document['data']
+        document = self.fetch_and_validate('/api/article/1')
         # Get the related resource URL.
-        resource_url = article['relationships']['author']['links']['related']
-        # The Flask test client doesn't need the `netloc` part of the URL.
-        path = urlparse(resource_url).path
+        resource_url = document['data']['relationships']['author']['links']['related']
         # Fetch the resource at the related resource URL.
-        response = self.app.get(path)
-        document = response.json
+        document = self.fetch_and_validate(resource_url)
         actual_person = document['data']
         # Compare it with what we expect to get.
-        response = self.app.get('/api/person/1')
-        expected_person = response.json['data']
+        document = self.fetch_and_validate('/api/person/1')
+        expected_person = document['data']
         assert actual_person == expected_person
 
     def test_related_resource_url_to_many(self):
@@ -291,28 +211,17 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Related Resource Links: https://jsonapi.org/format/#document-resource-object-related-resource-links
 
         """
-        person = self.Person(id=1)
-        article = self.Article(id=1)
-        article.author = person
-        self.session.add_all([person, article])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
         # Get a resource that has links.
-        response = self.app.get('/api/person/1')
-        document = response.json
-        person = document['data']
+        document = self.fetch_and_validate('/api/person/1')
         # Get the related resource URL.
-        resource_url = person['relationships']['articles']['links']['related']
-        # The Flask test client doesn't need the `netloc` part of the URL.
-        path = urlparse(resource_url).path
+        resource_url = document['data']['relationships']['articles']['links']['related']
         # Fetch the resource at the related resource URL.
-        response = self.app.get(path)
-        document = response.json
+        document = self.fetch_and_validate(resource_url)
         actual_articles = document['data']
         # Compare it with what we expect to get.
-        #
-        # TODO To make this test more robust, filter by `article.author == 1`.
-        response = self.app.get('/api/article')
-        document = response.json
+        document = self.fetch_and_validate('/api/article')
         expected_articles = document['data']
         assert actual_articles == expected_articles
 
@@ -326,14 +235,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Linkage: https://jsonapi.org/format/#document-resource-object-linkage
 
         """
-        article = self.Article(id=1)
-        self.session.add(article)
+        self.session.add(Article(id=1))
         self.session.commit()
-        response = self.app.get('/api/article/1')
-        document = response.json
-        article = document['data']
-        author_relationship = article['relationships']['author']
-        linkage = author_relationship['data']
+        document = self.fetch_and_validate('/api/article/1')
+        linkage = document['data']['relationships']['author']['data']
         assert linkage is None
 
     def test_resource_linkage_empty_to_many(self):
@@ -346,14 +251,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Linkage: https://jsonapi.org/format/#document-resource-object-linkage
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        response = self.app.get('/api/person/1')
-        document = response.json
-        person = document['data']
-        articles_relationship = person['relationships']['articles']
-        linkage = articles_relationship['data']
+        document = self.fetch_and_validate('/api/person/1')
+        linkage = document['data']['relationships']['articles']['data']
         assert linkage == []
 
     def test_resource_linkage_to_one(self):
@@ -366,16 +267,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Linkage: https://jsonapi.org/format/#document-resource-object-linkage
 
         """
-        person = self.Person(id=1)
-        article = self.Article(id=1)
-        article.author = person
-        self.session.add_all([article, person])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
-        response = self.app.get('/api/article/1')
-        document = response.json
-        article = document['data']
-        author_relationship = article['relationships']['author']
-        linkage = author_relationship['data']
+        document = self.fetch_and_validate('/api/article/1')
+        linkage = document['data']['relationships']['author']['data']
         assert linkage['id'] == '1'
         assert linkage['type'] == 'person'
 
@@ -389,17 +284,14 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Linkage: https://jsonapi.org/format/#document-resource-object-linkage
 
         """
-        article1 = self.Article(id=1)
-        article2 = self.Article(id=2)
-        person = self.Person(id=1)
-        person.articles = [article1, article2]
-        self.session.add_all([person, article1, article2])
+        self.session.add_all([
+            Article(id=1, author_id=1),
+            Article(id=2, author_id=1),
+            Person(pk=1)
+        ])
         self.session.commit()
-        response = self.app.get('/api/person/1')
-        document = response.json
-        person = document['data']
-        articles_relationship = person['relationships']['articles']
-        linkage = articles_relationship['data']
+        document = self.fetch_and_validate('/api/person/1')
+        linkage = document['data']['relationships']['articles']['data']
         assert ['1', '2'] == sorted(link['id'] for link in linkage)
         assert all(link['type'] == 'article' for link in linkage)
 
@@ -413,17 +305,11 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Links: https://jsonapi.org/format/#document-resource-object-links
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        response = self.app.get('/api/person/1')
-        document1 = response.json
-        person = document1['data']
-        self_url = person['links']['self']
-        # The Flask test client doesn't need the `netloc` part of the URL.
-        path = urlparse(self_url).path
-        response = self.app.get(path)
-        document2 = response.json
+        document1 = self.fetch_and_validate('/api/person/1')
+        self_url = document1['data']['links']['self']
+        document2 = self.fetch_and_validate(self_url)
         assert document1 == document2
 
     def test_resource_identifier_object_keys(self):
@@ -436,16 +322,10 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Resource Identifier Objects: https://jsonapi.org/format/#document-resource-identifier-objects
 
         """
-        person = self.Person(id=1)
-        article = self.Article(id=1)
-        article.author = person
-        self.session.add_all([article, person])
+        self.session.add_all([Person(pk=1), Article(id=1, author_id=1)])
         self.session.commit()
-        response = self.app.get('/api/article/1')
-        document = response.json
-        article = document['data']
-        author_relationship = article['relationships']['author']
-        linkage = author_relationship['data']
+        document = self.fetch_and_validate('/api/article/1')
+        linkage = document['data']['relationships']['author']['data']
         assert all(key in linkage for key in ('id', 'type'))
         assert linkage['id'] == '1'
         assert linkage['type'] == 'person'
@@ -460,13 +340,16 @@ class TestDocumentStructure(ManagerTestBase):
         .. _Links: https://jsonapi.org/format/#document-links
 
         """
-        response = self.app.get('/api/person')
-        document = response.json
-        links = document['links']
-        assert links['self'].endswith('/api/person')
+        document = self.fetch_and_validate('/api/person')
+        assert document['links']['self'].endswith('/api/person')
 
-    # TODO Test this for every possible type of request.
-    def test_jsonapi_object(self):
+    @pytest.mark.parametrize('url', [
+        '/api/person',
+        '/api/person/1',
+        '/api/person/1/articles',
+
+    ])
+    def test_jsonapi_object(self, url):
         """Tests that the server provides a jsonapi object.
 
         For more information, see the `JSON API Object`_ section of the
@@ -475,6 +358,7 @@ class TestDocumentStructure(ManagerTestBase):
         .. _JSON API Object: https://jsonapi.org/format/#document-jsonapi-object
 
         """
-        response = self.app.get('/api/person')
-        jsonapi = response.json['jsonapi']
-        assert '1.0' == jsonapi['version']
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        document = self.fetch_and_validate(url)
+        assert document['jsonapi']['version'] == '1.0'

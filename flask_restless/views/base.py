@@ -22,6 +22,7 @@ import re
 from collections import defaultdict
 from functools import partial
 from functools import wraps
+from http import HTTPStatus
 from itertools import chain
 from typing import Set
 from typing import Tuple
@@ -88,19 +89,19 @@ CONFLICT_INDICATORS = ('conflicts with', 'UNIQUE constraint failed',
 LINK_NAMES = ('first', 'last', 'prev', 'next')
 
 #: The query parameter key that identifies filter objects in a
-#: :http:method:`get` request.
+#: :https:method:`get` request.
 FILTER_PARAM = 'filter[objects]'
 
-#: The query parameter key that identifies sort fields in a :http:method:`get`
+#: The query parameter key that identifies sort fields in a :https:method:`get`
 #: request.
 SORT_PARAM = 'sort'
 
 #: The query parameter key that identifies the page number in a
-#: :http:method:`get` request.
+#: :https:method:`get` request.
 PAGE_NUMBER_PARAM = 'page[number]'
 
 #: The query parameter key that identifies the page size in a
-#: :http:method:`get` request.
+#: :https:method:`get` request.
 PAGE_SIZE_PARAM = 'page[size]'
 
 #: A regular expression for Accept headers.
@@ -219,7 +220,7 @@ def un_camel_case(s):
 
     """
     # This regular expression appears on StackOverflow
-    # <http://stackoverflow.com/a/199120/108197>, and is distributed
+    # <https://stackoverflow.com/a/199120/108197>, and is distributed
     # under the Creative Commons Attribution-ShareAlike 3.0 Unported
     # license.
     return re.sub(r'(?<=\w)([A-Z])', r' \1', s)
@@ -248,7 +249,7 @@ def catch_processing_exceptions(func):
 
 
 # This code is (lightly) adapted from the ``werkzeug`` library, in the
-# ``werkzeug.http`` module. See <http://werkzeug.pocoo.org> for more
+# ``werkzeug.http`` module. See <https://werkzeug.pocoo.org> for more
 # information.
 def parse_accept_header(value):
     """Parses an HTTP Accept-* header.
@@ -256,7 +257,7 @@ def parse_accept_header(value):
     This does not implement a complete valid algorithm but one that
     supports at least value and quality extraction.
 
-    `value` is the :http:header:`Accept` header string (everything after
+    `value` is the :https:header:`Accept` header string (everything after
     the ``Accept:``) to be parsed.
 
     Returns an iterator over ``(value, extra)`` tuples. If there were no
@@ -284,18 +285,18 @@ def parse_accept_header(value):
 
 
 def requires_json_api_accept(func):
-    """Decorator that requires :http:header:`Accept` headers with the
+    """Decorator that requires :https:header:`Accept` headers with the
     JSON API media type to have no media type parameters.
 
     This does *not* require that all requests have an
-    :http:header:`Accept` header, just that those requests with an
-    :http:header:`Accept` header for the JSON API media type have no
+    :https:header:`Accept` header, just that those requests with an
+    :https:header:`Accept` header for the JSON API media type have no
     media type parameters. However, if there are only
-    :http:header:`Accept` headers that specify non-JSON API media types,
-    this will cause a :http:status`406` response.
+    :https:header:`Accept` headers that specify non-JSON API media types,
+    this will cause a :https:status`406` response.
 
     If a request does not have the correct ``Accept`` header, a
-    :http:status:`406` response is returned. An incorrect header is
+    :https:status:`406` response is returned. An incorrect header is
     described in the `Server Responsibilities`_ section of the JSON API
     specification:
 
@@ -310,13 +311,13 @@ def requires_json_api_accept(func):
         def get(self, *args, **kw):
             return '...'
 
-    .. _Server Responsibilities: http://jsonapi.org/format/#content-negotiation-servers
+    .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
     """
     @wraps(func)
     def new_func(*args, **kw):
         """Executes ``func(*args, **kw)`` only after checking for the
-        correct JSON API :http:header:`Accept` header.
+        correct JSON API :https:header:`Accept` header.
 
         """
         header = request.headers.get('Accept')
@@ -328,7 +329,7 @@ def requires_json_api_accept(func):
         #
         # An empty Accept header is technically allowed by RFC 2616,
         # Section 14.1 (for more information, see
-        # http://stackoverflow.com/a/12131993/108197). Since an empty
+        # https://stackoverflow.com/a/12131993/108197). Since an empty
         # Accept header doesn't violate JSON APIs rule against having
         # only JSON API mimetypes with media type parameters, we simply
         # proceed as normal with the request.
@@ -357,11 +358,11 @@ def requires_json_api_accept(func):
 
 def requires_json_api_mimetype(func):
     """Decorator that requires requests *that include data* have the
-    :http:header:`Content-Type` header required by the JSON API
+    :https:header:`Content-Type` header required by the JSON API
     specification.
 
-    If the request does not have the correct :http:header:`Content-Type`
-    header, a :http:status:`415` response is returned.
+    If the request does not have the correct :https:header:`Content-Type`
+    header, a :https:status:`415` response is returned.
 
     View methods can be wrapped like this::
 
@@ -373,7 +374,7 @@ def requires_json_api_mimetype(func):
     @wraps(func)
     def new_func(*args, **kw):
         """Executes ``func(*args, **kw)`` only after checking for the
-        correct JSON API :http:header:`Content-Type` header.
+        correct JSON API :https:header:`Content-Type` header.
 
         """
         # GET and DELETE requests don't have request data in JSON API,
@@ -619,12 +620,19 @@ def error(id_=None, links=None, status=None, code=None, title=None,
     For more information, see the `Errors`_ section of the JSON API
     specification.
 
-    .. Errors_: http://jsonapi.org/format/#errors
+    .. Errors_: https://jsonapi.org/format/#errors
 
     """
     # HACK We use locals() so we don't have to list every keyword argument.
     if all(kwvalue is None for kwvalue in locals().values()):
         raise ValueError('At least one of the arguments must not be None.')
+
+    # JSON API requires 'status' field to be a string
+    if isinstance(status, HTTPStatus):
+        status = str(status.value)
+    elif isinstance(status, int):
+        status = str(status)
+
     return {'id': id_, 'links': links, 'status': status, 'code': code,
             'title': title, 'detail': detail, 'source': source, 'meta': meta}
 
@@ -668,7 +676,7 @@ def errors_response(status, errors) -> Tuple[dict, int, dict]:
     The keys within each error object are described in the `Errors`_
     section of the JSON API specification.
 
-    .. _Errors: http://jsonapi.org/format/#errors
+    .. _Errors: https://jsonapi.org/format/#errors
 
     """
     document = {'errors': errors, 'jsonapi': {'version': JSONAPI_VERSION}}
@@ -757,17 +765,17 @@ class Paginated:
         >>> for rel, url in paginated.pagination_links.items():
         ...     print(rel, url)
         ...
-        first http://example.com/api/person?page[size]=3&page[number]=1
-        last http://example.com/api/person?page[size]=3&page[number]=4
-        prev http://example.com/api/person?page[size]=3&page[number]=1
-        next http://example.com/api/person?page[size]=3&page[number]=3
+        first https://example.com/api/person?page[size]=3&page[number]=1
+        last https://example.com/api/person?page[size]=3&page[number]=4
+        prev https://example.com/api/person?page[size]=3&page[number]=1
+        next https://example.com/api/person?page[size]=3&page[number]=3
         >>> for link in paginated.header_links:
         ...     print(link)
         ...
-        <http://example.com/api/person?page[size]=3&page[number]=1>; rel="first"
-        <http://example.com/api/person?page[size]=3&page[number]=4>; rel="last"
-        <http://example.com/api/person?page[size]=3&page[number]=1>; rel="prev"
-        <http://example.com/api/person?page[size]=3&page[number]=3>; rel="next"
+        <https://example.com/api/person?page[size]=3&page[number]=1>; rel="first"
+        <https://example.com/api/person?page[size]=3&page[number]=4>; rel="last"
+        <https://example.com/api/person?page[size]=3&page[number]=1>; rel="prev"
+        <https://example.com/api/person?page[size]=3&page[number]=3>; rel="next"
 
     """
 
@@ -778,7 +786,7 @@ class Paginated:
 
         This is essentially the inverse operation of the parsing that is
         done when reading the filter objects from the query parameters
-        of the request string in a :http:method:`get` request.
+        of the request string in a :https:method:`get` request.
 
         """
         return json.dumps(filters)
@@ -789,7 +797,7 @@ class Paginated:
 
         This is essentially the inverse operation of the parsing that is
         done when reading the sort fields from the query parameters of
-        the request string in a :http:method:`get` request.
+        the request string in a :https:method:`get` request.
 
         """
         return ','.join(''.join((dir_, field)) for dir_, field in sort)
@@ -1181,7 +1189,10 @@ class FetchResource(FetchView):
             raise NotFound(details=f'No resource with ID {resource_id}')
 
         data = self._serialize_instances([instance])
-        result = {'data': data[0]}
+        result = {
+            'jsonapi': {'version': JSONAPI_VERSION},
+            'data': data[0]
+        }
 
         if include:
             include_set = get_inclusions_for_instances(include, [instance])
@@ -1336,7 +1347,7 @@ class APIBase(ModelView):
 
     def _handle_validation_exception(self, exception):
         """Rolls back the session, extracts validation error messages, and
-        returns an error response with :http:statuscode:`400` containing the
+        returns an error response with :https:statuscode:`400` containing the
         extracted validation error messages.
 
         Again, *this method calls
@@ -1676,7 +1687,7 @@ class APIBase(ModelView):
         which resources, other than the primary resource or resources, will be
         included in a compound document response.
 
-        .. _Inclusion of Related Resources: http://jsonapi.org/format/#fetching-includes
+        .. _Inclusion of Related Resources: https://jsonapi.org/format/#fetching-includes
 
         """
         # Add any links requested to be included by URL parameters.

@@ -39,8 +39,8 @@ class TestCreatingResources(BaseTestClass):
     @pytest.fixture(autouse=True)
     def setup(self):
         manager = APIManager(self.app, session=self.session)
-        manager.create_api(Article, ['POST'], allow_client_generated_ids=True)
-        manager.create_api(Person, ['POST'])
+        manager.create_api(Article, methods=['POST'], allow_client_generated_ids=True)
+        manager.create_api(Person, methods=['POST'])
         manager.create_api(Comment)
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -69,8 +69,8 @@ class TestCreatingResources(BaseTestClass):
             }
         }
         query_string = {'fields[person]': 'name'}
-        response = self.client.post('/api/person', json=data, query_string=query_string)
-        person = response.json['data']
+        document = self.post_and_validate('/api/person', json=data, query_string=query_string)
+        person = document['data']
         # ID and type must always be included.
         assert ['attributes', 'id', 'type'] == sorted(person)
         assert ['name'] == sorted(person['attributes'])
@@ -102,9 +102,8 @@ class TestCreatingResources(BaseTestClass):
             }
         }
         query_string = dict(include='comments')
-        response = self.client.post('/api/person', json=data, query_string=query_string)
-        assert response.status_code == 201
-        included = response.json['included']
+        document = self.post_and_validate('/api/person', json=data, query_string=query_string)
+        included = document['included']
         assert len(included) == 1
         comment = included[0]
         assert comment['type'] == 'comment'
@@ -128,15 +127,14 @@ class TestCreatingResources(BaseTestClass):
         response = self.client.post('/api/person', json=data)
         assert response.status_code == 201
         location = response.headers['Location']
-        # TODO Technically, this test shouldn't know beforehand where the
-        # location of the created object will be. We are testing implementation
-        # here, assuming that the implementation of the server creates a new
-        # Person object with ID 1, which is bad style.
         assert location.endswith('/api/person/1')
         person = response.json['data']
         assert person['type'] == 'person'
         assert person['id'] == '1'
         assert person['attributes']['name'] == 'foo'
+        instance = self.session.query(Person).get(1)
+        assert instance.pk == 1
+        assert instance.name == 'foo'
 
     def test_without_type(self):
         """Tests for an error response if the client fails to specify the type
@@ -149,9 +147,7 @@ class TestCreatingResources(BaseTestClass):
 
         """
         data = {'data': {'name': 'foo'}}
-        response = self.client.post('/api/person', json=data)
-        assert response.status_code == 400
-        assert 'missing "type"' in response.json['errors'][0]['detail']
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='missing "type"')
 
     def test_client_generated_id(self):
         """Tests that the client can specify a UUID to become the ID of the
@@ -165,9 +161,8 @@ class TestCreatingResources(BaseTestClass):
         """
         generated_id = 111
         data = {'data': {'type': 'article', 'id': generated_id}}
-        response = self.client.post('/api/article', json=data)
-        assert response.status_code == 201
-        article = response.json['data']
+        document = self.post_and_validate('/api/article', json=data)
+        article = document['data']
         assert article['type'] == 'article'
         assert article['id'] == str(generated_id)
 
@@ -178,9 +173,8 @@ class TestCreatingResources(BaseTestClass):
         .. _Client-Generated IDs: https://jsonapi.org/format/#crud-creating-client-ids
         """
         data = {'data': {'type': 'article', 'id': 13}}
-        response = self.client.post('/api/person', json=data)
-        assert response.status_code == 403
-        assert 'Server does not allow client-generated IDS' in response.json['errors'][0]['detail']
+        self.post_and_validate('/api/person', json=data, expected_response_code=403,
+                               error_msg='Server does not allow client-generated IDS')
 
     def test_type_conflict(self):
         """Tests that if a client specifies a type that does not match the
@@ -194,9 +188,8 @@ class TestCreatingResources(BaseTestClass):
         """
 
         data = {'data': {'type': 'bogus_type', 'name': 'foo'}}
-        response = self.client.post('/api/person', json=data)
-        assert response.status_code == 409
-        assert 'expected type "person" but got type "bogus_type"' in response.json['errors'][0]['detail']
+        self.post_and_validate('/api/person', json=data, expected_response_code=409,
+                               error_msg='expected type "person" but got type "bogus_type"')
 
     def test_id_conflict(self):
         """Tests that if a client specifies a client-generated ID that already
@@ -212,6 +205,19 @@ class TestCreatingResources(BaseTestClass):
         self.session.add(Article(id=generated_id))
         self.session.commit()
         data = {'data': {'type': 'article', 'id': '112'}}
-        response = self.client.post('/api/article', json=data)
-        assert response.status_code == 409
-        assert 'UNIQUE constraint failed' in response.json['errors'][0]['detail']
+        self.post_and_validate('/api/article', json=data, expected_response_code=409, error_msg='UNIQUE constraint failed')
+
+    def test_ignore_additional_members(self):
+        """Tests that the server ignores any additional top-level members.
+
+        For more information, see the `Document Structure`_ section of the JSON
+        API specification.
+
+        .. _Document Structure: https://jsonapi.org/format/#document-structure
+
+        """
+        # The key `bogus` is unknown to the JSON API specification, and therefore should be ignored.
+        data = {'data': {'type': 'person'}, 'bogus': True}
+        document = self.post_and_validate('/api/person', json=data)
+        assert 'errors' not in document
+        assert self.session.query(Person).count() == 1

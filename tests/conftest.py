@@ -1,3 +1,7 @@
+from typing import Any
+from typing import Dict
+from typing import Optional
+
 from flask import Flask
 from flask.testing import FlaskClient
 from sqlalchemy import create_engine
@@ -38,10 +42,27 @@ class BaseTestClass:
     def teardown_method(self):
         self.session.close()
 
-    def fetch_and_validate(self, uri: str, expected_response_code: int = 200):
-        response = self.client.get(uri)
+    def _decode_and_validate(self, response, expected_response_code):
         assert response.status_code == expected_response_code
         document = response.json
         validate_schema(document)
 
+        return document
+
+    def fetch_and_validate(self, uri: str, expected_response_code: int = 200):
+        response = self.client.get(uri)
+        return self._decode_and_validate(response, expected_response_code)
+
+    def post_and_validate(
+            self,
+            uri: str,
+            json: Dict[str, Any],
+            expected_response_code: int = 201,
+            query_string: Optional[Dict[str, str]] = None,
+            error_msg: Optional[str] = None
+    ):
+        response = self.client.post(uri, json=json, query_string=query_string)
+        document = self._decode_and_validate(response, expected_response_code)
+        if error_msg:
+            assert error_msg in document['errors'][0]['detail']
         return document

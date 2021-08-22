@@ -345,8 +345,8 @@ class TestFetchResource(ManagerTestBase):
         errors = document['errors']
         assert len(errors) == 2
         error1, error2 = errors
-        assert error1['status'] == 500
-        assert error2['status'] == 500
+        assert error1['status'] == '500'
+        assert error2['status'] == '500'
         assert 'Failed to serialize resource' in error1['detail']
         assert 'Failed to serialize resource' in error2['detail']
         assert 'ID 1' in error1['detail'] or 'ID 1' in error2['detail']

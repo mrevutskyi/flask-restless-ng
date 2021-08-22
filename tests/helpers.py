@@ -127,7 +127,7 @@ def check_sole_error(response, status, strings):
     errors = document['errors']
     assert len(errors) == 1
     error = errors[0]
-    assert error['status'] == status
+    assert error['status'] == str(status)
     assert all(s in error['detail'] for s in strings)
 
 
