@@ -823,6 +823,19 @@ class TestProcessors(ManagerTestBase):
         document = response.json
         assert document['foo'] == 'bar'
 
+    def test_postprocessor_can_rollback_transaction(self):
+        """Tests that a postprocessor can rollback the transaction."""
+
+        def rollback_transaction(result=None, **kw):
+            self.session.rollback()
+
+        postprocessors = dict(POST_RESOURCE=[rollback_transaction])
+        self.manager.create_api(self.Person, methods=['POST'], postprocessors=postprocessors)
+        data = dict(data=dict(type='person'))
+        response = self.app.post('/api/person', json=data)
+        assert response.status_code == 201
+        assert self.session.query(self.Person).count() == 0
+
 
 class TestAssociationProxy(ManagerTestBase):
     """Tests for creating an object with a relationship using an association

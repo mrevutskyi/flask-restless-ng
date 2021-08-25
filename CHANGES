@@ -11,6 +11,7 @@ Upcoming
   https://jsonapi.org/format/#error-objects
 - Returns '400' status if page number is provided but page size is 0
 - Returns '400' status if unknown field was used for sorting
+- Allow rolling back the current session in `POST_RESOURCE` postprocessors
 
 
 Version 2.2.5

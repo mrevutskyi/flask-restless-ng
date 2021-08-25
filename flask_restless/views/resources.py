@@ -285,7 +285,7 @@ class API(APIBase):
         try:
             instance = self.deserializer.deserialize(data)
             self.session.add(instance)
-            self.session.commit()
+            self.session.flush()
         except ClientGeneratedIDNotAllowed as exception:
             detail = exception.message()
             return error_response(403, cause=exception, detail=detail)
@@ -328,6 +328,7 @@ class API(APIBase):
         status = 201
         for postprocessor in self.postprocessors['POST_RESOURCE']:
             postprocessor(result=result)
+        self.session.commit()
         return result, status, headers
 
     def _update_instance(self, instance, data, resource_id):
