@@ -4,14 +4,14 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
-Upcoming
+Version 2.2.6
 -------------
 - Escape user input in error messages to prevent potention server-side cross-site scripting
 - 'status' field in error objects is now a string, as required by JSON API standard
   https://jsonapi.org/format/#error-objects
 - Returns '400' status if page number is provided but page size is 0
 - Returns '400' status if unknown field was used for sorting
-- Allow rolling back the current session in `POST_RESOURCE` postprocessors
+- Allow rolling back the current session in `POST_RESOURCE` postprocessors (#28)
 
 
 Version 2.2.5
