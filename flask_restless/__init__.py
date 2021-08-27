@@ -13,7 +13,7 @@ SQLAlchemy models via the JSON API protocol.
 
 """
 #: The current version of this extension.
-__version__ = '2.2.6'
+__version__ = '2.2.7'
 
 
 # The following names are available as part of the public API for Flask-Restless-NG.
