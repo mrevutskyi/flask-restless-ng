@@ -817,6 +817,31 @@ class TestProcessors(ManagerTestBase):
         assert person.name == 'bar'
         assert temp == ['baz']
 
+    def test_postprocessor_rollback(self):
+        """Tests that user can rollback changes in postprocessor."""
+        person = self.Person(id=1, name=u'foo')
+        self.session.add(person)
+        self.session.commit()
+
+        def rollback(result=None, **kw):
+            self.session.rollback()
+
+        postprocessors = dict(PATCH_RESOURCE=[rollback])
+        self.manager.create_api(self.Person, methods=['PATCH'],
+                                postprocessors=postprocessors)
+        data = {
+            'data': {
+                'id': '1',
+                'type': 'person',
+                'attributes': {
+                    'name': u'bar'
+                }
+            }
+        }
+        response = self.app.patch('/api/person/1', json=data)
+        assert response.status_code == 204
+        assert person.name == 'foo'
+
 
 class TestAssociationProxy(ManagerTestBase):
     """Tests for creating an object with a relationship using an association

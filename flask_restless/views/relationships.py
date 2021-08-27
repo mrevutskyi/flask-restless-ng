@@ -156,11 +156,12 @@ class RelationshipAPI(APIBase):
                 except self.validation_exceptions as exception:
                     return self._handle_validation_exception(exception)
 
-        self.session.commit()
+        self.session.flush()
 
         # Perform any necessary postprocessing.
         for postprocessor in self.postprocessors['POST_RELATIONSHIP']:
             postprocessor()
+        self.session.commit()
         return {}, 204, {}
 
     def patch(self, resource_id, relation_name):
@@ -265,13 +266,10 @@ class RelationshipAPI(APIBase):
                 setattr(instance, relation_name, replacement)
             except self.validation_exceptions as exception:
                 return self._handle_validation_exception(exception)
-        # TODO do we need to commit the session here?
-        #
-        #     self.session.commit()
-        #
-        # Perform any necessary postprocessing.
+        self.session.flush()
         for postprocessor in self.postprocessors['PATCH_RELATIONSHIP']:
             postprocessor()
+        self.session.commit()
         return {}, 204, {}
 
     def delete(self, resource_id, relation_name):

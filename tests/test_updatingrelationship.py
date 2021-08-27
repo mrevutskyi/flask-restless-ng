@@ -272,6 +272,25 @@ class TestAdding(ManagerTestBase):
         assert response.status_code == 204
         assert has_run == [True]
 
+    def test_postprocessor_with_rollback(self):
+        """Tests that users can rollback session in postprocessors."""
+        person = self.Person(id=1)
+        article = self.Article(id=1)
+        self.session.add_all([article, person])
+        self.session.commit()
+
+        def rollback(*args, **kwargs):
+            self.session.rollback()
+
+        postprocessors = {'POST_RELATIONSHIP': [rollback]}
+        self.manager.create_api(self.Person, postprocessors=postprocessors,
+                                url_prefix='/api2', methods=['PATCH'])
+        data = {'data': [{'type': 'article', 'id': '1'}]}
+        response = self.app.post('/api2/person/1/relationships/articles',
+                                 json=data)
+        assert response.status_code == 204
+        assert person.articles == []
+
 
 class TestDeleting(ManagerTestBase):
     """Tests for deleting a link from a resource's to-many relationship via the
@@ -776,6 +795,26 @@ class TestUpdatingToMany(ManagerTestBase):
                                   json=data)
         assert response.status_code == 204
         assert has_run == [True]
+
+    def test_postprocessor_with_rollback(self):
+        """Tests that users can rollback session in postprocessors."""
+        person = self.Person(id=1)
+        article = self.Article(id=1)
+        self.session.add_all([article, person])
+        self.session.commit()
+
+        def rollback(*args, **kw):
+            self.session.rollback()
+
+        postprocessors = {'PATCH_RELATIONSHIP': [rollback]}
+        self.manager.create_api(self.Person, postprocessors=postprocessors,
+                                url_prefix='/api2', methods=['PATCH'],
+                                allow_to_many_replacement=True)
+        data = {'data': [{'type': 'article', 'id': '1'}]}
+        response = self.app.patch('/api2/person/1/relationships/articles',
+                                  json=data)
+        assert response.status_code == 204
+        assert person.articles == []
 
     def test_set_null(self):
         """Tests that an attempt to set a null value on a to-many

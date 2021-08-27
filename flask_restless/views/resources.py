@@ -438,7 +438,7 @@ class API(APIBase):
             if data:
                 for field, value in data.items():
                     setattr(instance, field, value)
-            self.session.commit()
+            self.session.flush()
         except self.validation_exceptions as exception:
             return self._handle_validation_exception(exception)
 
@@ -497,4 +497,5 @@ class API(APIBase):
         # Perform any necessary postprocessing.
         for postprocessor in self.postprocessors['PATCH_RESOURCE']:
             postprocessor(result=result)
+        self.session.commit()
         return result, status, {}
