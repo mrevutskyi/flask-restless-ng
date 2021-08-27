@@ -109,6 +109,36 @@ class TestCreatingResources(BaseTestClass):
         assert comment['type'] == 'comment'
         assert comment['id'] == '1'
 
+    def test_null_in_to_many_relationship(self):
+        """Tests that API correctly processes nulls in to-many relationships."""
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'comments': {
+                        'data': None
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/person', json=data, expected_response_code=400,
+                               error_msg="Failed to deserialize object: 'comments' Incompatible collection type: None is not list-like")
+
+    def test_null_in_to_one_relationship(self):
+        """Tests that API correctly processes nulls in to-one relationships."""
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': None
+                    }
+                }
+            }
+        }
+        document = self.post_and_validate('/api/article', json=data)
+        assert document['data']['id'] == '1'
+
     def test_create(self):
         """Tests that the client can create a single resource.
 

@@ -256,6 +256,13 @@ class MissingType(MissingInformation):
     element = 'type'
 
 
+class InvalidType(DeserializationException):
+
+    def __init__(self, detail):
+        super(InvalidType, self).__init__()
+        self.detail = detail
+
+
 class Serializer(ABC):
     """An object that, when called, returns a dictionary representation of a
     given instance of a SQLAlchemy model.
@@ -599,7 +606,11 @@ class DefaultDeserializer(Deserializer):
         instance = self.model(**data)
         # Set each relation specified in the links.
         for relation_name, related_value in links.items():
-            setattr(instance, relation_name, related_value)
+            try:
+                setattr(instance, relation_name, related_value)
+            except TypeError as e:
+                raise InvalidType(f"'{relation_name}' {e}")
+
         return instance
 
 
@@ -655,6 +666,8 @@ class DefaultRelationshipDeserializer(Deserializer):
         :exc:`ConflictingType`.
 
         """
+        if data is None:
+            return None
         # If this is a to-one relationship, get the sole instance of the model.
         if not isinstance(data, list):
             if 'id' not in data:
