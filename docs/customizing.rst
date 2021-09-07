@@ -127,12 +127,10 @@ Bulk operations via the JSON API Bulk extension are not yet supported.
 Custom serialization
 ~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 0.17.0
-
-Flask-Restless provides serialization and deserialization that work with the
+Flask-Restless-NG provides serialization and deserialization that work with the
 JSON API specification.  If you wish to have more control over the way
 instances of your models are converted to Python dictionary representations,
-you can specify a custom serialization function by providing it to
+you can specify a custom serialization class by providing it to
 :meth:`APIManager.create_api` via the ``serializer`` keyword argument.
 Similarly, to provide a deserialization function that converts a Python
 dictionary representation to an instance of your model, use the
@@ -142,8 +140,23 @@ client will receive non-compliant responses!
 
 Define your serialization functions like this::
 
-    def serialize(instance, only=None):
-        return {'id': ..., 'type': ..., 'attributes': ...}
+    from flask_restless import Serializer
+
+    class CustomSerializer(Serializer):
+        def __init__(attributes, relationships):
+            self.attributes = attributes
+            self.relationships = relationships
+
+        @property
+        def attributes_columns(self):
+            return set(self.attributes)
+
+        @property
+        def relationship_columns(self):
+            return set(self.relationships)
+
+        def serialize(instance, only=None):
+            return {'id': instance.id, 'type': 'custom', 'attributes': {}}
 
 ``instance`` is an instance of a SQLAlchemy model and the ``only`` argument is
 a list; only the fields (that is, the attributes and relationships) whose names
@@ -154,20 +167,15 @@ dictionary representation of the resource object.
 
 For deserialization, define your custom deserialization function like this::
 
-    def deserialize(document):
-        return Person(...)
+    from flask_restless import Deserializer
+
+    class DefaultDeserializer(Deserializer):
+        def deserialize(self, document):
+            return Person(...)
 
 ``document`` is a dictionary representation of the *complete* incoming JSON API
 document, where the ``data`` element contains the primary resource object. The
 function must return an instance of the model that has the requested fields.
-
-.. note::
-
-   If you wish to write your own serialization functions, we **strongly
-   suggest** using a Python object serialization library instead of writing
-   your own serialization functions. This is also likely a better approach than
-   specifying which columns to include or exclude (:ref:`includes`) or
-   preprocessors and postprocessors (:ref:`processors`).
 
 For example, if you create schema for your database models using
 `Marshmallow`_, then you use that library's built-in serialization functions as
@@ -178,28 +186,36 @@ follows::
         name = fields.String()
 
         def make_object(self, data):
-            print('MAKING OBJECT FROM', data)
             return Person(**data)
 
     person_schema = PersonSchema()
 
-    def person_serializer(instance):
-        return person_schema.dump(instance).data
+    class PersonSerializer(Serializer):
+        @property
+        def attributes_columns(self):
+            return {'name'}
 
-    def person_deserializer(data):
-        return person_schema.load(data).data
+        @property
+        def relationship_columns(self):
+            return set()
+
+        def serialize(instance, only=None):
+            return person_schema.dump(instance).data
+
+    class PersonDeserializer(Deserializer):
+        def deserialize(self, document):
+            return person_schema.load(data).data
+
+
+    person_serializer = PersonSerializer()
+    person_deserializer = PersonDeserializer()
 
     manager = APIManager(app, session=session)
     manager.create_api(Person, methods=['GET', 'POST'],
                        serializer=person_serializer,
                        deserializer=person_deserializer)
 
-For a complete version of this example, see the
-:file:`examples/server_configurations/custom_serialization.py` module in the
-source distribution, or `view it online`_.
-
 .. _Marshmallow: https://marshmallow.readthedocs.org
-.. _view it online: https://github.com/mrevutskyi/flask-restless-ng/tree/master/examples/server_configurations/custom_serialization.py
 
 Per-model serialization
 -----------------------
@@ -219,7 +235,7 @@ and then make a request like
    Host: example.com
    Accept: application/vnd.api+json
 
-then Flask-Restless will use the ``article_serializer`` function to serialize
+then Flask-Restless-NG will use the ``article_serializer`` instance to serialize
 the primary data (that is, the top-level ``data`` element in the response
 document) and the ``person_serializer`` to serialize the included ``Person``
 resource.
@@ -232,7 +248,7 @@ Capturing validation errors
 By default, no validation is performed by Flask-Restless; if you want
 validation, implement it yourself in your database models. However, by
 specifying a list of exceptions raised by your backend on validation errors,
-Flask-Restless will forward messages from raised exceptions to the client in an
+Flask-Restless-NG will forward messages from raised exceptions to the client in an
 error response.
 
 .. COMMENT
