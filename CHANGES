@@ -4,6 +4,10 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.2.8
+-------------
+- Make sure that POST response contains actual values from the DB
+
 Version 2.2.7
 -------------
 - Fix Server Error for null relationship in POST (#29)
