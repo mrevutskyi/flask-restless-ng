@@ -75,6 +75,23 @@ class TestCreatingResources(BaseTestClass):
         assert ['attributes', 'id', 'type'] == sorted(person)
         assert ['name'] == sorted(person['attributes'])
 
+    def test_conversion(self):
+        """Tests that values are being returned in the correct type.
+        E.g. if an integer has been passed as a string, we still have integer in the response
+
+        """
+        data = {
+            'data': {
+                'type': 'person',
+                'attributes': {
+                    'age': '99'
+                }
+            }
+        }
+        document = self.post_and_validate('/api/person', json=data)
+        person = document['data']
+        assert person['attributes']['age'] == 99
+
     def test_include_post(self):
         """Tests for including related resources on a
         :http:method:`post` request.

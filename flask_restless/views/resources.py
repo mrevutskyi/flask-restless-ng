@@ -286,6 +286,7 @@ class API(APIBase):
             instance = self.deserializer.deserialize(data)
             self.session.add(instance)
             self.session.flush()
+            self.session.refresh(instance)
         except ClientGeneratedIDNotAllowed as exception:
             detail = exception.message()
             return error_response(403, cause=exception, detail=detail)
