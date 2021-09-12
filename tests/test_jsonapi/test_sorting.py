@@ -1,14 +1,15 @@
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy.orm import relationship
 
-from ..helpers import ManagerTestBase
-from ..helpers import validate_schema
+import pytest
+
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Article
+from .models import Base
+from .models import Person
 
 
-class TestSorting(ManagerTestBase):
+class TestSorting(BaseTestClass):
     """Tests corresponding to the `Sorting`_ section of the JSON API
     specification.
 
@@ -16,27 +17,14 @@ class TestSorting(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        super(TestSorting, self).setUp()
-
-        class Article(self.Base):
-            __tablename__ = 'article'
-            id = Column(Integer, primary_key=True)
-            title = Column(Unicode)
-            author_id = Column(Integer, ForeignKey('person.id'))
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-            age = Column(Integer)
-            articles = relationship('Article', backref='author')
-
-        self.Article = Article
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.create_api(Article)
-        self.manager.create_api(Person)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Article)
+        manager.create_api(Person)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_sort_increasing(self):
         """Tests that the client can specify the fields on which to sort
@@ -48,17 +36,15 @@ class TestSorting(ManagerTestBase):
         .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person1 = self.Person(name=u'foo', age=20)
-        person2 = self.Person(name=u'bar', age=10)
-        person3 = self.Person(name=u'baz', age=30)
-        self.session.add_all([person1, person2, person3])
+        self.session.bulk_save_objects([
+            Person(name=u'foo', age=20),
+            Person(name=u'bar', age=10),
+            Person(name=u'baz', age=30)
+        ])
         self.session.commit()
-        query_string = {'sort': 'age'}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string={'sort': 'age'})
         people = document['data']
-        age1, age2, age3 = (p['attributes']['age'] for p in people)
+        age1, age2, age3 = (person['attributes']['age'] for person in people)
         assert age1 <= age2 <= age3
 
     def test_sort_decreasing(self):
@@ -71,17 +57,15 @@ class TestSorting(ManagerTestBase):
         .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person1 = self.Person(name=u'foo', age=20)
-        person2 = self.Person(name=u'bar', age=10)
-        person3 = self.Person(name=u'baz', age=30)
-        self.session.add_all([person1, person2, person3])
+        self.session.bulk_save_objects([
+            Person(name=u'foo', age=20),
+            Person(name=u'bar', age=10),
+            Person(name=u'baz', age=30)
+        ])
         self.session.commit()
-        query_string = {'sort': '-age'}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string={'sort': '-age'})
         people = document['data']
-        age1, age2, age3 = (p['attributes']['age'] for p in people)
+        age1, age2, age3 = (person['attributes']['age'] for person in people)
         assert age1 >= age2 >= age3
 
     def test_sort_multiple_fields(self):
@@ -94,19 +78,17 @@ class TestSorting(ManagerTestBase):
 
         """
         self.session.bulk_save_objects([
-            self.Person(name=u'foo', age=99),
-            self.Person(name=u'bar', age=99),
-            self.Person(name=u'baz', age=80),
-            self.Person(name=u'xyz', age=80)
+            Person(name=u'foo', age=99),
+            Person(name=u'bar', age=99),
+            Person(name=u'baz', age=80),
+            Person(name=u'xyz', age=80)
         ])
         self.session.commit()
         # Sort by age, decreasing, then by name, increasing.
         query_string = {'sort': '-age,name'}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         people = document['data']
-        p1, p2, p3, p4 = (p['attributes'] for p in people)
+        p1, p2, p3, p4 = (person['attributes'] for person in people)
         assert p1['age'] == p2['age'] >= p3['age'] == p4['age']
         assert p1['name'] <= p2['name']
         assert p3['name'] <= p4['name']
@@ -120,21 +102,19 @@ class TestSorting(ManagerTestBase):
         .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person1 = self.Person(age=20)
-        person2 = self.Person(age=10)
-        person3 = self.Person(age=30)
-        article1 = self.Article(id=1, author=person1)
-        article2 = self.Article(id=2, author=person2)
-        article3 = self.Article(id=3, author=person3)
-        self.session.add_all([person1, person2, person3, article1, article2,
-                              article3])
+        self.session.add_all([
+            Person(pk=1, age=20),
+            Person(pk=2, age=10),
+            Person(pk=3, age=30),
+            Article(id=1, author_id=1),
+            Article(id=2, author_id=2),
+            Article(id=3, author_id=3),
+        ])
         self.session.commit()
         query_string = {'sort': 'author.age'}
-        response = self.app.get('/api/article', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/article', query_string=query_string)
         articles = document['data']
-        assert ['2', '1', '3'] == [c['id'] for c in articles]
+        assert ['2', '1', '3'] == [article['id'] for article in articles]
 
     def test_sort_multiple_relationship_attributes(self):
         """Tests that the client can sort by multiple relationship
@@ -146,21 +126,18 @@ class TestSorting(ManagerTestBase):
         .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person1 = self.Person(age=2, name=u'd')
-        person2 = self.Person(age=1, name=u'b')
-        person3 = self.Person(age=1, name=u'a')
-        person4 = self.Person(age=2, name=u'c')
-        people = [person1, person2, person3, person4]
-        articles = [self.Article(id=i, author=person)
-                    for i, person in enumerate(people, start=1)]
-        self.session.add_all(people + articles)
+        self.session.bulk_save_objects([
+            Person(pk=1, age=2, name=u'd'),
+            Person(pk=2, age=1, name=u'b'),
+            Person(pk=3, age=1, name=u'a'),
+            Person(pk=4, age=2, name=u'c'),
+        ])
+        self.session.bulk_save_objects([Article(id=i, author_id=i) for i in range(1, 5)])
         self.session.commit()
         query_string = {'sort': 'author.age,author.name'}
-        response = self.app.get('/api/article', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/article', query_string=query_string)
         articles = document['data']
-        assert ['3', '2', '4', '1'] == [c['id'] for c in articles]
+        assert ['3', '2', '4', '1'] == [article['id'] for article in articles]
 
     def test_sorting_relationship(self):
         """Tests for sorting relationship objects when requesting
@@ -172,28 +149,19 @@ class TestSorting(ManagerTestBase):
         .. _Sorting: https://jsonapi.org/format/#fetching-sorting
 
         """
-        person = self.Person(id=1)
-        articles = [self.Article(id=i, title=str(i), author=person) for i in range(5)]
-        self.session.add(person)
-        self.session.add_all(articles)
+        self.session.add(Person(pk=1))
+        self.session.bulk_save_objects([Article(id=i, title=str(i), author_id=1) for i in range(5)])
         self.session.commit()
-        query_string = dict(sort='-title')
-        response = self.app.get('/api/person/1/relationships/articles',
-                                query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        query_string = {'sort': '-title'}
+        document = self.fetch_and_validate('/api/person/1/relationships/articles', query_string=query_string)
         articles = document['data']
         article_ids = [article['id'] for article in articles]
         assert ['4', '3', '2', '1', '0'] == article_ids
 
     def test_bad_request_on_incorrect_sorting_field(self):
-        query_string = dict(sort='unknown')
-        response = self.app.get('/api/person', query_string=query_string)
-        assert response.status_code == 400
-        # TODO: test message response
+        query_string = {'sort': 'unknown'}
+        self.fetch_and_validate('/api/person', query_string=query_string, expected_response_code=400, error_msg='No such field unknown')
 
     def test_bad_request_on_incorrect_sorting_relationship_field(self):
-        query_string = dict(sort='articles.unknown')
-        response = self.app.get('/api/person', query_string=query_string)
-        assert response.status_code == 400
-        # TODO: test message response
+        query_string = {'sort': 'articles.unknown'}
+        self.fetch_and_validate('/api/person', query_string=query_string, expected_response_code=400, error_msg='No such field unknown')

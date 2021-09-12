@@ -20,34 +20,31 @@ section of the JSON API specification.
 """
 import json
 
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
+import pytest
 
 from flask_restless import CONTENT_TYPE
+from flask_restless import APIManager
 
-from ..helpers import ManagerTestBase
+from ..conftest import BaseTestClass
 from ..helpers import check_sole_error
+from .models import Base
+from .models import Person
 
 
-class TestServerResponsibilities(ManagerTestBase):
-    """Tests corresponding to the `Server Responsibilities`_ section of
-    the JSON API specification.
+class TestServerResponsibilities(BaseTestClass):
+    """Tests corresponding to the `Inclusion of Related Resources`_section of the JSON API specification.
 
-    .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
+    .. _Inclusion of Related Resources: https://jsonapi.org/format/#fetching-includes
 
     """
 
-    def setUp(self):
-        super().setUp()
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-
-        self.Base.metadata.create_all()
-        self.manager.create_api(Person, methods=['GET', 'POST', 'PATCH', 'DELETE'])
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Person, methods=['GET', 'POST', 'PATCH', 'DELETE'])
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_get_content_type(self):
         """"Tests that a response to a :https:method:`get` request has
@@ -59,7 +56,7 @@ class TestServerResponsibilities(ManagerTestBase):
         .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
-        response = self.app.get('/api/person')
+        response = self.client.get('/api/person')
         assert response.mimetype == CONTENT_TYPE
 
     def test_post_content_type(self):
@@ -77,7 +74,7 @@ class TestServerResponsibilities(ManagerTestBase):
 
         """
         data = {'data': {'type': 'person'}}
-        response = self.app.post('/api/person', json=data)
+        response = self.client.post('/api/person', json=data)
         assert response.mimetype == CONTENT_TYPE
 
     def test_no_response_media_type_params(self):
@@ -92,7 +89,7 @@ class TestServerResponsibilities(ManagerTestBase):
         """
         headers = {'Content-Type': f'{CONTENT_TYPE}; version=1'}
         # flask 1.0.1 overrides headers when `json` parameter is used, so have to use json.dumps
-        response = self.app.post('/api/person', data=json.dumps({}), headers=headers)
+        response = self.client.post('/api/person', data=json.dumps({}), headers=headers)
         check_sole_error(response, 415, ['Content-Type', 'media type parameters'])
 
     def test_empty_accept_header(self):
@@ -107,7 +104,7 @@ class TestServerResponsibilities(ManagerTestBase):
 
         """
         headers = {'Accept': ''}
-        response = self.app.get('/api/person', headers=headers)
+        response = self.client.get('/api/person', headers=headers)
         assert response.status_code == 200
         document = response.json
         assert len(document['data']) == 0
@@ -123,7 +120,7 @@ class TestServerResponsibilities(ManagerTestBase):
 
         """
         headers = {'Accept': CONTENT_TYPE}
-        response = self.app.get('/api/person', headers=headers)
+        response = self.client.get('/api/person', headers=headers)
         assert response.status_code == 200
         document = response.json
         assert len(document['data']) == 0
@@ -139,6 +136,6 @@ class TestServerResponsibilities(ManagerTestBase):
         .. _Server Responsibilities: https://jsonapi.org/format/#content-negotiation-servers
 
         """
-        headers = {'Accept': '{0}; q=.8, {0}; q=.9'.format(CONTENT_TYPE)}
-        response = self.app.get('/api/person', headers=headers)
+        headers = {'Accept': f'{CONTENT_TYPE}; q=.8, {CONTENT_TYPE}; q=.9'}
+        response = self.client.get('/api/person', headers=headers)
         check_sole_error(response, 406, ['Accept', 'media type parameter'])
