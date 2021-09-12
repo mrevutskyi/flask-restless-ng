@@ -1,14 +1,14 @@
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy.orm import relationship
+import pytest
 
-from ..helpers import ManagerTestBase
-from ..helpers import validate_schema
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Article
+from .models import Base
+from .models import Person
 
 
-class TestSparseFieldsets(ManagerTestBase):
+class TestSparseFieldsets(BaseTestClass):
     """Tests corresponding to the `Sparse Fieldsets`_ section of the
     JSON API specification.
 
@@ -16,27 +16,14 @@ class TestSparseFieldsets(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        super(TestSparseFieldsets, self).setUp()
-
-        class Article(self.Base):
-            __tablename__ = 'article'
-            id = Column(Integer, primary_key=True)
-            title = Column(Unicode)
-            author_id = Column(Integer, ForeignKey('person.id'))
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-            age = Column(Integer)
-            articles = relationship('Article', backref='author')
-
-        self.Article = Article
-        self.Person = Person
-        self.Base.metadata.create_all()
-        self.manager.create_api(Article)
-        self.manager.create_api(Person)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Article)
+        manager.create_api(Person)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_sparse_fieldsets(self):
         """Tests that the client can specify which fields to return in the
@@ -48,13 +35,10 @@ class TestSparseFieldsets(ManagerTestBase):
         .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
-        person = self.Person(id=1, name=u'foo', age=99)
-        self.session.add(person)
+        self.session.add(Person(pk=1, name=u'foo', age=99))
         self.session.commit()
         query_string = {'fields[person]': 'id,name'}
-        response = self.app.get('/api/person/1', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person/1', query_string=query_string)
         person = document['data']
         # ID and type must always be included.
         assert ['attributes', 'id', 'type'] == sorted(person)
@@ -71,13 +55,10 @@ class TestSparseFieldsets(ManagerTestBase):
         .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
-        person = self.Person(id=1, name=u'foo', age=99)
-        self.session.add(person)
+        self.session.add(Person(pk=1, name=u'foo', age=99))
         self.session.commit()
         query_string = {'fields[person]': 'id'}
-        response = self.app.get('/api/person/1', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person/1', query_string=query_string)
         person = document['data']
         # ID and type must always be included.
         assert ['id', 'type'] == sorted(person)
@@ -92,17 +73,16 @@ class TestSparseFieldsets(ManagerTestBase):
         .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
-        person1 = self.Person(id=1, name=u'foo', age=99)
-        person2 = self.Person(id=2, name=u'bar', age=80)
-        self.session.add_all([person1, person2])
+        self.session.add_all([
+            Person(pk=1, name=u'foo', age=99),
+            Person(pk=2, name=u'bar', age=80)
+        ])
         self.session.commit()
         query_string = {'fields[person]': 'id,name'}
-        response = self.app.get('/api/person', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person', query_string=query_string)
         people = document['data']
-        assert all(['attributes', 'id', 'type'] == sorted(p) for p in people)
-        assert all(['name'] == sorted(p['attributes']) for p in people)
+        assert all(['attributes', 'id', 'type'] == sorted(person) for person in people)
+        assert all(['name'] == list(person['attributes']) for person in people)
 
     def test_sparse_fieldsets_multiple_types(self):
         """Tests that the client can specify which fields to return in the
@@ -114,18 +94,17 @@ class TestSparseFieldsets(ManagerTestBase):
         .. _Sparse Fieldsets: https://jsonapi.org/format/#fetching-sparse-fieldsets
 
         """
-        article = self.Article(id=1, title=u'bar')
-        person = self.Person(id=1, name=u'foo', age=99, articles=[article])
-        self.session.add_all([person, article])
+        self.session.add_all([
+            Person(pk=1, name=u'foo', age=99),
+            Article(id=1, title=u'bar', author_id=1)
+        ])
         self.session.commit()
         # Person objects should only have ID and name, while article objects
         # should only have ID.
         query_string = {'include': 'articles',
                         'fields[person]': 'id,name,articles',
                         'fields[article]': 'id'}
-        response = self.app.get('/api/person/1', query_string=query_string)
-        document = response.json
-        validate_schema(document)
+        document = self.fetch_and_validate('/api/person/1', query_string=query_string)
         person = document['data']
         linked = document['included']
         # We requested 'id', 'name', and 'articles'; 'id' and 'type' must
