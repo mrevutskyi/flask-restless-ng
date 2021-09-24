@@ -598,10 +598,11 @@ class DefaultDeserializer(Deserializer):
         # the code above and the code there into a helper function...
         pass
         # Move the attributes up to the top level.
-        data.update(data.pop('attributes', {}))
+        attributes = data.pop('attributes', {})
         # Special case: if there are any dates, convert the string form of the
         # date into an instance of the Python ``datetime`` object.
-        data = strings_to_datetimes(self.model, data)
+        attributes = strings_to_datetimes(self.model, attributes)
+        data.update(attributes)
         # Create the new instance by keyword attributes.
         instance = self.model(**data)
         # Set each relation specified in the links.

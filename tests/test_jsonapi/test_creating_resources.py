@@ -168,7 +168,9 @@ class TestCreatingResources(BaseTestClass):
         data = {
             'data': {
                 'type': 'person',
-                'name': 'foo'
+                'attributes': {
+                    'name': 'foo',
+                }
             }
         }
         response = self.client.post('/api/person', json=data)
