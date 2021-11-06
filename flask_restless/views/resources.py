@@ -393,7 +393,7 @@ class API(APIBase):
                 # return an error response.
                 if not_found:
                     errors = [error(detail=f'No object of type {escape(t)} found with ID {escape(i)}')
-                              for t, i in not_found]
+                              for i, t in not_found]
                     return errors_response(404, errors)
             # Otherwise, it is a to-one relationship, so just get the single
             # related resource.

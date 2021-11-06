@@ -1,3 +1,4 @@
+import http
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -45,6 +46,8 @@ class BaseTestClass:
     @staticmethod
     def _decode_and_validate(response, expected_response_code, error_msg=None):
         assert response.status_code == expected_response_code
+        if expected_response_code == http.HTTPStatus.NO_CONTENT:
+            return
         document = response.json
         validate_schema(document)
         if error_msg:
@@ -54,7 +57,8 @@ class BaseTestClass:
 
     def fetch_and_validate(
             self,
-            uri: str, expected_response_code: int = 200,
+            uri: str,
+            expected_response_code: int = 200,
             query_string: Optional[Dict[str, Any]] = None,
             error_msg: Optional[str] = None
     ):
@@ -70,4 +74,14 @@ class BaseTestClass:
             error_msg: Optional[str] = None
     ):
         response = self.client.post(uri, json=json, query_string=query_string)
+        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
+
+    def patch_and_validate(
+            self,
+            uri: str,
+            json: Dict[str, Any],
+            expected_response_code: int = 204,
+            error_msg: Optional[str] = None
+    ):
+        response = self.client.patch(uri, json=json)
         return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)

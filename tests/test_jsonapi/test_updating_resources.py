@@ -20,18 +20,18 @@ of the JSON API specification.
 """
 from operator import attrgetter
 
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy import func
-from sqlalchemy.orm import relationship
+import pytest
 
-from ..helpers import ManagerTestBase
+from flask_restless import APIManager
+
+from ..conftest import BaseTestClass
+from .models import Article
+from .models import Base
+from .models import Person
+from .models import Tag
 
 
-class TestUpdatingResources(ManagerTestBase):
+class TestUpdatingResources(BaseTestClass):
     """Tests corresponding to the `Updating Resources`_ section of the JSON API
     specification.
 
@@ -39,34 +39,16 @@ class TestUpdatingResources(ManagerTestBase):
 
     """
 
-    def setUp(self):
-        super(TestUpdatingResources, self).setUp()
-
-        class Article(self.Base):
-            __tablename__ = 'article'
-            id = Column(Integer, primary_key=True)
-            author_id = Column(Integer, ForeignKey('person.id'))
-            author = relationship('Person', backref='articles')
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode, unique=True)
-            age = Column(Integer)
-
-        class Tag(self.Base):
-            __tablename__ = 'tag'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-            updated_at = Column(DateTime, server_default=func.now(), onupdate=func.current_timestamp())
-
-        self.Article = Article
-        self.Person = Person
-        self.Tag = Tag
-        self.Base.metadata.create_all()
-        self.manager.create_api(Article, methods=['PATCH'])
-        self.manager.create_api(Person, methods=['PATCH'])
-        self.manager.create_api(Tag, methods=['GET', 'PATCH'])
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        manager = APIManager(self.app, session=self.session)
+        manager.create_api(Article, methods=['PATCH'])
+        manager.create_api(Person, methods=['PATCH'])
+        manager.create_api(Person, methods=['PATCH'], url_prefix='/api2', allow_to_many_replacement=True)
+        manager.create_api(Tag, methods=['GET', 'PATCH'])
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
 
     def test_update(self):
         """Tests that the client can update a resource's attributes.
@@ -77,14 +59,12 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's Attributes: https://jsonapi.org/format/#crud-updating-resource-attributes
 
         """
-        person = self.Person(id=1, name=u'foo', age=10)
+        person = Person(pk=1, name=u'foo', age=10)
         self.session.add(person)
         self.session.commit()
-        data = dict(data=dict(type='person', id='1',
-                              attributes=dict(name=u'bar')))
-        response = self.app.patch('/api/person/1', json=data)
-        assert response.status_code == 204
-        assert person.id == 1
+        data = dict(data=dict(type='person', id='1', attributes=dict(name=u'bar')))
+        self.patch_and_validate('/api/person/1', json=data)
+        assert person.pk == 1
         assert person.name == 'bar'
         assert person.age == 10
 
@@ -97,10 +77,9 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's To-One Relationships: https://jsonapi.org/format/#crud-updating-resource-to-one-relationships
 
         """
-        person1 = self.Person(id=1)
-        person2 = self.Person(id=2)
-        article = self.Article(id=1)
-        person1.articles = [article]
+        person1 = Person(pk=1)
+        person2 = Person(pk=2)
+        article = Article(id=1, author_id=1)
         self.session.add_all([person1, person2, article])
         self.session.commit()
         # Change the author of the article from person 1 to person 2.
@@ -115,8 +94,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api/article/1', json=data)
-        assert response.status_code == 204
+        self.patch_and_validate('/api/article/1', json=data)
         assert article.author is person2
 
     def test_remove_to_one(self):
@@ -128,9 +106,8 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's To-One Relationships: https://jsonapi.org/format/#crud-updating-resource-to-one-relationships
 
         """
-        person = self.Person(id=1)
-        article = self.Article()
-        person.articles = [article]
+        person = Person(pk=1)
+        article = Article(id=1, author_id=1)
         self.session.add_all([person, article])
         self.session.commit()
         # Change the author of the article to None.
@@ -141,8 +118,7 @@ class TestUpdatingResources(ManagerTestBase):
                 'relationships': {'author': {'data': None}}
             }
         }
-        response = self.app.patch('/api/article/1', json=data)
-        assert response.status_code == 204
+        self.patch_and_validate('/api/article/1', json=data)
         assert article.author is None
 
     def test_to_many(self):
@@ -154,14 +130,11 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
-        person = self.Person(id=1)
-        article1 = self.Article(id=1)
-        article2 = self.Article(id=2)
+        person = Person(pk=1)
+        article1 = Article(id=1)
+        article2 = Article(id=2)
         self.session.add_all([person, article1, article2])
         self.session.commit()
-        self.manager.create_api(self.Person, methods=['PATCH'],
-                                url_prefix='/api2',
-                                allow_to_many_replacement=True)
         data = {
             'data': {
                 'type': 'person',
@@ -176,8 +149,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', json=data)
-        assert response.status_code == 204
+        self.patch_and_validate('/api2/person/1', json=data)
         articles = sorted(person.articles, key=attrgetter('id'))
         assert [article1, article2] == articles
 
@@ -190,15 +162,13 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
-        person = self.Person(id=1)
-        article1 = self.Article(id=1)
-        article2 = self.Article(id=2)
-        person.articles = [article1, article2]
-        self.session.add_all([person, article1, article2])
+        person = Person(pk=1)
+        self.session.add_all([
+            person,
+            Article(id=1, author_id=1),
+            Article(id=2, author_id=1)
+        ])
         self.session.commit()
-        self.manager.create_api(self.Person, methods=['PATCH'],
-                                url_prefix='/api2',
-                                allow_to_many_replacement=True)
         data = {
             'data': {
                 'type': 'person',
@@ -210,8 +180,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', json=data)
-        assert response.status_code == 204
+        self.patch_and_validate('/api2/person/1', json=data)
         assert person.articles == []
 
     def test_to_many_forbidden(self):
@@ -225,8 +194,7 @@ class TestUpdatingResources(ManagerTestBase):
         .. _Updating a Resource's To-Many Relationships: https://jsonapi.org/format/#crud-updating-resource-to-many-relationships
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
         data = {
             'data': {
@@ -235,8 +203,7 @@ class TestUpdatingResources(ManagerTestBase):
                 'relationships': {'articles': {'data': []}}
             }
         }
-        response = self.app.patch('/api/person/1', json=data)
-        assert response.status_code == 403
+        self.patch_and_validate('/api/person/1', json=data, expected_response_code=403)
 
     def test_other_modifications(self):
         """Tests that if an update causes additional changes in the resource in
@@ -249,8 +216,7 @@ class TestUpdatingResources(ManagerTestBase):
         .. _200 OK: https://jsonapi.org/format/#crud-updating-responses-200
 
         """
-        tag = self.Tag(id=1)
-        self.session.add(tag)
+        self.session.add(Tag(id=1))
         self.session.commit()
         data = {
             'data': {
@@ -259,12 +225,9 @@ class TestUpdatingResources(ManagerTestBase):
                 'attributes': {'name': u'foo'}
             }
         }
-        response = self.app.patch('/api/tag/1', json=data)
-        assert response.status_code == 200
-        document = response.json
+        document = self.patch_and_validate('/api/tag/1', json=data, expected_response_code=200)
         tag1 = document['data']
-        response = self.app.get('/api/tag/1')
-        document = response.json
+        document = self.fetch_and_validate('/api/tag/1')
         tag2 = document['data']
         assert tag1 == tag2
 
@@ -279,8 +242,7 @@ class TestUpdatingResources(ManagerTestBase):
 
         """
         data = dict(data=dict(type='person', id='1'))
-        response = self.app.patch('/api/person/1', json=data)
-        assert response.status_code == 404
+        self.patch_and_validate('/api/person/1', json=data, expected_response_code=404)
 
     def test_nonexistent_relationship(self):
         """Tests that an attempt to update a nonexistent resource causes a
@@ -292,12 +254,8 @@ class TestUpdatingResources(ManagerTestBase):
         .. _404 Not Found: https://jsonapi.org/format/#crud-updating-responses-404
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
-        self.manager.create_api(self.Person, methods=['PATCH'],
-                                url_prefix='/api2',
-                                allow_to_many_replacement=True)
         data = {
             'data': {
                 'type': 'person',
@@ -307,9 +265,7 @@ class TestUpdatingResources(ManagerTestBase):
                 }
             }
         }
-        response = self.app.patch('/api2/person/1', json=data)
-        assert response.status_code == 404
-        # TODO test for error details
+        self.patch_and_validate('/api2/person/1', json=data, expected_response_code=404, error_msg='No object of type article found with ID 1')
 
     def test_conflicting_attributes(self):
         """Tests that an attempt to update a resource with a non-unique
@@ -322,15 +278,14 @@ class TestUpdatingResources(ManagerTestBase):
         .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
-        person1 = self.Person(id=1, name=u'foo')
-        person2 = self.Person(id=2)
-        self.session.add_all([person1, person2])
+
+        self.session.add_all([
+            Person(pk=1, name=u'foo'),
+            Person(pk=2)
+        ])
         self.session.commit()
-        data = dict(data=dict(type='person', id='2',
-                              attributes=dict(name=u'foo')))
-        response = self.app.patch('/api/person/2', json=data)
-        assert response.status_code == 409
-        # TODO test for error details
+        data = dict(data=dict(type='person', id='2', attributes=dict(name=u'foo')))
+        self.patch_and_validate('/api/person/2', json=data, expected_response_code=409, error_msg='IntegrityError')
 
     def test_conflicting_type(self):
         """Tests that an attempt to update a resource with the wrong type
@@ -342,13 +297,10 @@ class TestUpdatingResources(ManagerTestBase):
         .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
         data = dict(data=dict(type='bogus', id='1'))
-        response = self.app.patch('/api/person/1', json=data)
-        assert response.status_code == 409
-        # TODO test for error details
+        self.patch_and_validate('/api/person/1', json=data, expected_response_code=409, error_msg='Type must be person, not bogus')
 
     def test_conflicting_id(self):
         """Tests that an attempt to update a resource with the wrong ID causes
@@ -360,10 +312,7 @@ class TestUpdatingResources(ManagerTestBase):
         .. _409 Conflict: https://jsonapi.org/format/#crud-updating-responses-409
 
         """
-        person = self.Person(id=1)
-        self.session.add(person)
+        self.session.add(Person(pk=1))
         self.session.commit()
         data = dict(data=dict(type='person', id='bogus'))
-        response = self.app.patch('/api/person/1', json=data)
-        assert response.status_code == 409
-        # TODO test for error details
+        self.patch_and_validate('/api/person/1', json=data, expected_response_code=409, error_msg='ID must be 1, not bogus')

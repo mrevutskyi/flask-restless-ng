@@ -1,9 +1,11 @@
 from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import DateTime
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
+from sqlalchemy import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -30,11 +32,18 @@ class Comment(Base):
 class Person(Base):
     __tablename__ = 'person'
     pk = Column(Integer, primary_key=True)  # non-standard name for primary key
-    name = Column(Unicode)
+    name = Column(Unicode, unique=True)
     age = Column(Integer)
     other = Column(Float)
     articles = relationship('Article', backref='author')
     comments = relationship('Comment', backref='author')
+
+
+class Tag(Base):
+    __tablename__ = 'tag'
+    id = Column(Integer, primary_key=True)
+    name = Column(Unicode)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.current_timestamp())
 
 
 class Parent(Base):
