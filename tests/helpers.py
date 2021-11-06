@@ -150,11 +150,8 @@ def force_content_type_jsonapi(test_client):
             before executing ``func(*args, **kw)``.
 
             """
-            # if 'content_type' not in kw:
-            #     kw['content_type'] = CONTENT_TYPE
-            if 'headers' not in kw:
-                kw['headers'] = dict()
-            headers = kw['headers']
+            headers = kw.get('headers') or {}
+            kw['headers'] = headers
             if 'content_type' not in kw and 'Content-Type' not in headers:
                 kw['content_type'] = CONTENT_TYPE
             return func(*args, **kw)

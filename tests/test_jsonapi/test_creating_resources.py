@@ -17,6 +17,8 @@ of the JSON API specification.
 .. _Creating Resources: https://jsonapi.org/format/#crud-creating
 
 """
+from datetime import datetime
+
 import pytest
 
 from flask_restless import APIManager
@@ -26,6 +28,7 @@ from .models import Article
 from .models import Base
 from .models import Comment
 from .models import Person
+from .models import Various
 
 
 class TestCreatingResources(BaseTestClass):
@@ -41,6 +44,7 @@ class TestCreatingResources(BaseTestClass):
         manager = APIManager(self.app, session=self.session)
         manager.create_api(Article, methods=['POST'], allow_client_generated_ids=True)
         manager.create_api(Person, methods=['POST'])
+        manager.create_api(Various, methods=['POST'])
         manager.create_api(Comment)
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -270,3 +274,119 @@ class TestCreatingResources(BaseTestClass):
         document = self.post_and_validate('/api/person', json=data)
         assert 'errors' not in document
         assert self.session.query(Person).count() == 1
+
+    def test_related_resource_url_forbidden(self):
+        """Tests that :http:method:`post` requests to a related resource URL are forbidden.
+
+        """
+        response = self.client.post('/api/person/1/articles', json={})
+        assert response.status_code == 405
+
+    def test_deserializing_time(self):
+        """Test for deserializing a JSON representation of a time field."""
+        test_time = datetime.now().time().isoformat()
+        data = dict(data=dict(type='various', attributes=dict(time=test_time)))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['time'] == test_time
+
+    def test_deserializing_date(self):
+        """Test for deserializing a JSON representation of a date field."""
+        test_date = datetime.now().date().isoformat()
+        data = dict(data=dict(type='various', attributes=dict(date=test_date)))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['date'] == test_date
+
+    def test_deserializing_datetime(self):
+        """Test for deserializing a JSON representation of a date field."""
+        test_datetime = datetime.now().isoformat()
+        data = dict(data=dict(type='various', attributes=dict(datetime=test_datetime)))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['datetime'] == test_datetime
+
+    def test_no_data(self):
+        """Tests that a request with no data yields an error response."""
+        self.post_and_validate('/api/person', expected_response_code=400, error_msg='Unable to decode data')
+
+    def test_invalid_json(self):
+        """Tests that a request with an invalid JSON causes an error response."""
+        self.post_and_validate('/api/person', expected_response_code=400, data='not a JSON', error_msg='Unable to decode data')
+
+    def test_rollback_on_integrity_error(self):
+        """Tests that an integrity error in the database causes a session
+        rollback, and that the server can still process requests correctly
+        after this rollback.
+
+        """
+        self.session.add(Person(name=u'foo'))
+        self.session.commit()
+        data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
+        self.post_and_validate('/api/person', json=data, expected_response_code=409)
+        assert self.session.is_active, 'Session is in `partial rollback` state'
+        data = dict(data=dict(type='person', attributes=dict(name=u'bar')))
+        self.post_and_validate('/api/person', json=data)
+
+    def test_nonexistent_attribute(self):
+        """Tests that the server rejects an attempt to create a resource with
+        an attribute that does not exist in the resource.
+
+        """
+        data = dict(data=dict(type='person', attributes=dict(bogus=0)))
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='model has no attribute "bogus"')
+
+    def test_nonexistent_relationship(self):
+        """Tests that the server rejects an attempt to create a resource with a relationship that does not exist in the resource."""
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'bogus': {
+                        'data': None
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='model has no relationship "bogus"')
+
+    def test_invalid_relationship(self):
+        """Tests that the server rejects an attempt to create a resource with an invalid relationship linkage object."""
+        # In this request, the `articles` linkage object is missing the
+        # `data` element.
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships':
+                {
+                    'articles': {}
+                }
+            }
+        }
+        self.post_and_validate('/api/person', json=data, expected_response_code=400,
+                               error_msg='missing "data" element in linkage object for relationship "articles"')
+
+    def test_hybrid_property(self):
+        """Tests that an attempt to set a read-only hybrid property causes an error.
+
+        See issue #171 in the original Flask-Restless.
+        """
+        data = dict(data=dict(type='person', attributes=dict(is_minor=True)))
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='model has no attribute "is_minor"')
+
+    def test_nullable_datetime(self):
+        """Tests for creating a model with a nullable datetime field.
+
+        For more information, see issue #91 in the original Flask-Restless.
+
+        """
+        data = dict(data=dict(type='various', attributes=dict(datetime=None)))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['datetime'] is None
+
+    def test_empty_date(self):
+        """Tests that attempting to assign an empty date string to a date field actually assigns a value of ``None``.
+
+        For more information, see issue #91 in the original Flask-Restless.
+
+        """
+        data = dict(data=dict(type='various', attributes=dict(datetime='')))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['datetime'] is None

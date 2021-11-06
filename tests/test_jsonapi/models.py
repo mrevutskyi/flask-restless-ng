@@ -1,12 +1,16 @@
 from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import Date
 from sqlalchemy import DateTime
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Interval
+from sqlalchemy import Time
 from sqlalchemy import Unicode
 from sqlalchemy import func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 from ..helpers import DeclarativeMeta
@@ -57,3 +61,22 @@ class Child(Base):
     id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('parent.id'))
     invisible = Column(Boolean)
+
+
+class Various(Base):
+    """A test model that contains fields of various types, for testing serialization/deserialization"""
+    __tablename__ = 'various'
+    id = Column(Integer, primary_key=True)
+    age = Column(Integer)
+    date = Column(Date)
+    datetime = Column(DateTime)
+    time = Column(Time)
+    interval = Column(Interval)
+
+    @hybrid_property
+    def is_minor(self):
+        if hasattr(self, 'age'):
+            if self.age is None:
+                return None
+            return self.age < 18
+        return None

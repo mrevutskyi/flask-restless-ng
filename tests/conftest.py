@@ -60,20 +60,20 @@ class BaseTestClass:
             uri: str,
             expected_response_code: int = 200,
             query_string: Optional[Dict[str, Any]] = None,
-            error_msg: Optional[str] = None
+            error_msg: Optional[str] = None,
+            headers: Optional[Dict[str, Any]] = None
     ):
-        response = self.client.get(uri, query_string=query_string)
+        response = self.client.get(uri, query_string=query_string, headers=headers)
         return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
 
     def post_and_validate(
             self,
             uri: str,
-            json: Dict[str, Any],
             expected_response_code: int = 201,
-            query_string: Optional[Dict[str, Any]] = None,
-            error_msg: Optional[str] = None
+            error_msg: Optional[str] = None,
+            **kwargs
     ):
-        response = self.client.post(uri, json=json, query_string=query_string)
+        response = self.client.post(uri, **kwargs)
         return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
 
     def patch_and_validate(
