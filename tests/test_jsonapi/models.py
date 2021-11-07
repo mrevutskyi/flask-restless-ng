@@ -80,3 +80,9 @@ class Various(Base):
                 return None
             return self.age < 18
         return None
+
+
+class UnicodePK(Base):
+    """Model with a primary key that has Unicode type. """
+    __tablename__ = 'unicode_pk'
+    name = Column(Unicode, primary_key=True)

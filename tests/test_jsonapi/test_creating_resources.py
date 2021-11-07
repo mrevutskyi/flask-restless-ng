@@ -20,6 +20,7 @@ of the JSON API specification.
 from datetime import datetime
 
 import pytest
+from dateutil import parser
 
 from flask_restless import APIManager
 
@@ -28,6 +29,7 @@ from .models import Article
 from .models import Base
 from .models import Comment
 from .models import Person
+from .models import UnicodePK
 from .models import Various
 
 
@@ -42,9 +44,11 @@ class TestCreatingResources(BaseTestClass):
     @pytest.fixture(autouse=True)
     def setup(self):
         manager = APIManager(self.app, session=self.session)
+        self.manager = manager
         manager.create_api(Article, methods=['POST'], allow_client_generated_ids=True)
         manager.create_api(Person, methods=['POST'])
         manager.create_api(Various, methods=['POST'])
+        manager.create_api(UnicodePK, methods=['POST'])
         manager.create_api(Comment)
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -129,6 +133,47 @@ class TestCreatingResources(BaseTestClass):
         comment = included[0]
         assert comment['type'] == 'comment'
         assert comment['id'] == '1'
+
+    def test_to_one(self):
+        """Tests the creation of a model with a to-one relation."""
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': {'type': 'person', 'id': '1'}
+                    }
+                }
+            }
+        }
+        document = self.post_and_validate('/api/article', json=data)
+        person = document['data']['relationships']['author']['data']
+        assert person['type'] == 'person'
+        assert person['id'] == '1'
+
+    def test_to_many(self):
+        """Tests the creation of a model with a to-many relation."""
+        self.session.bulk_save_objects([Article(id=1), Article(id=2)])
+        self.session.commit()
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'articles': {
+                        'data': [
+                            {'type': 'article', 'id': '1'},
+                            {'type': 'article', 'id': '2'}
+                        ]
+                    }
+                }
+            }
+        }
+        document = self.post_and_validate('/api/person', json=data)
+        articles = document['data']['relationships']['articles']['data']
+        assert ['1', '2'] == sorted(article['id'] for article in articles)
+        assert all(article['type'] == 'article' for article in articles)
 
     def test_null_in_to_many_relationship(self):
         """Tests that API correctly processes nulls in to-many relationships."""
@@ -375,7 +420,6 @@ class TestCreatingResources(BaseTestClass):
         """Tests for creating a model with a nullable datetime field.
 
         For more information, see issue #91 in the original Flask-Restless.
-
         """
         data = dict(data=dict(type='various', attributes=dict(datetime=None)))
         document = self.post_and_validate('/api/various', json=data)
@@ -385,8 +429,98 @@ class TestCreatingResources(BaseTestClass):
         """Tests that attempting to assign an empty date string to a date field actually assigns a value of ``None``.
 
         For more information, see issue #91 in the original Flask-Restless.
-
         """
         data = dict(data=dict(type='various', attributes=dict(datetime='')))
         document = self.post_and_validate('/api/various', json=data)
         assert document['data']['attributes']['datetime'] is None
+
+    def test_current_timestamp(self):
+        """Tests that the string ``'CURRENT_TIMESTAMP'`` gets converted into a
+        datetime object when making a request to set a date or time field.
+
+        """
+        data = dict(data=dict(type='various', attributes=dict(datetime='CURRENT_TIMESTAMP')))
+        document = self.post_and_validate('/api/various', json=data)
+        datetime_value = document['data']['attributes']['datetime']
+        assert datetime_value is not None
+        diff = datetime.utcnow() - parser.parse(datetime_value)
+        # Check that the total number of seconds from the server creating the
+        # Person object to (about) now is not more than about a minute.
+        assert diff.days == 0
+        assert (diff.seconds + diff.microseconds / 1000000) < 3600
+
+    def test_timedelta(self):
+        """Tests for creating an object with a timedelta attribute."""
+        data = dict(data=dict(type='various', attributes=dict(interval=300)))
+        document = self.post_and_validate('/api/various', json=data)
+        assert document['data']['attributes']['interval'] == 300
+
+    def test_unicode_primary_key(self):
+        """Test for creating a resource with a unicode primary key.
+        And that even if a primary key is not named ``id``, it still appears in an ``id`` key in the response.
+        """
+        data = dict(data=dict(type='unicode_pk', attributes=dict(name=u'Юникод')))
+        document = self.post_and_validate('/api/unicode_pk', json=data)
+        assert document['data']['attributes']['name'] == u'Юникод'
+        assert document['data']['id'] == u'Юникод'
+
+    def test_collection_name(self):
+        """Tests for creating a resource with an alternate collection name."""
+        self.manager.create_api(Person, methods=['POST'], collection_name='people')
+        data = dict(data=dict(type='people'))
+        document = self.post_and_validate('/api/people', json=data)
+        assert document['data']['type'] == 'people'
+
+
+class TestProcessors(BaseTestClass):
+    """Tests for pre- and post-processors."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.manager = APIManager(self.app, session=self.session)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
+
+    def test_preprocessor(self):
+        """Tests :http:method:`post` requests with a preprocessor function."""
+
+        def set_name(data=None, **kw):
+            """Sets the name attribute of the incoming data object, regardless
+            of the value requested by the client.
+
+            """
+            if data is not None:
+                data['data']['attributes']['name'] = u'bar'
+
+        preprocessors = dict(POST_RESOURCE=[set_name])
+        self.manager.create_api(Person, methods=['POST'], preprocessors=preprocessors)
+        data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
+        document = self.post_and_validate('/api/person', json=data)
+        assert document['data']['attributes']['name'] == 'bar'
+
+    def test_postprocessor(self):
+        """Tests that a postprocessor is invoked when creating a resource."""
+
+        def modify_result(result=None, **kw):
+            result['foo'] = 'bar'
+
+        postprocessors = dict(POST_RESOURCE=[modify_result])
+        self.manager.create_api(Person, methods=['POST'], postprocessors=postprocessors)
+        data = dict(data=dict(type='person'))
+        response = self.client.post('/api/person', json=data)
+        assert response.status_code == 201
+        document = response.json
+        assert document['foo'] == 'bar'
+
+    def test_postprocessor_can_rollback_transaction(self):
+        """Tests that a postprocessor can rollback the transaction."""
+
+        def rollback_transaction(result=None, **kw):
+            self.session.rollback()
+
+        postprocessors = dict(POST_RESOURCE=[rollback_transaction])
+        self.manager.create_api(Person, methods=['POST'], postprocessors=postprocessors)
+        data = dict(data=dict(type='person'))
+        self.post_and_validate('/api/person', json=data)
+        assert self.session.query(Person).count() == 0

@@ -21,9 +21,6 @@ specification.
 """
 from __future__ import division
 
-from datetime import datetime
-
-import dateutil
 from sqlalchemy import Column
 from sqlalchemy import Date
 from sqlalchemy import DateTime
@@ -122,115 +119,6 @@ class TestCreating(ManagerTestBase):
         self.manager.create_api(Person, methods=['POST'])
         self.manager.create_api(Article, methods=['POST'])
         self.manager.create_api(Tag, methods=['POST'], primary_key='name')
-
-    def test_current_timestamp(self):
-        """Tests that the string ``'CURRENT_TIMESTAMP'`` gets converted into a
-        datetime object when making a request to set a date or time field.
-
-        """
-        CURRENT = 'CURRENT_TIMESTAMP'
-        data = dict(data=dict(type='person',
-                              attributes=dict(birth_datetime=CURRENT)))
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        person = document['data']
-        birth_datetime = person['attributes']['birth_datetime']
-        assert birth_datetime is not None
-        birth_datetime = dateutil.parser.parse(birth_datetime)
-        diff = datetime.utcnow() - birth_datetime
-        # Check that the total number of seconds from the server creating the
-        # Person object to (about) now is not more than about a minute.
-        assert diff.days == 0
-        assert (diff.seconds + diff.microseconds / 1000000) < 3600
-
-    def test_timedelta(self):
-        """Tests for creating an object with a timedelta attribute."""
-        data = dict(data=dict(type='person', attributes=dict(hangtime=300)))
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        person = document['data']
-        assert person['attributes']['hangtime'] == 300
-
-    def test_to_many(self):
-        """Tests the creation of a model with a to-many relation."""
-        article1 = self.Article(id=1)
-        article2 = self.Article(id=2)
-        self.session.add_all([article1, article2])
-        self.session.commit()
-        data = {
-            'data': {
-                'type': 'person',
-                'relationships': {
-                    'articles': {
-                        'data': [
-                            {'type': 'article', 'id': '1'},
-                            {'type': 'article', 'id': '2'}
-                        ]
-                    }
-                }
-            }
-        }
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        person = document['data']
-        articles = person['relationships']['articles']['data']
-        assert ['1', '2'] == sorted(article['id'] for article in articles)
-        assert all(article['type'] == 'article' for article in articles)
-
-    def test_to_one(self):
-        """Tests the creation of a model with a to-one relation."""
-        person = self.Person(id=1)
-        self.session.add(person)
-        self.session.commit()
-        data = {
-            'data': {
-                'type': 'article',
-                'relationships': {
-                    'author': {
-                        'data': {'type': 'person', 'id': '1'}
-                    }
-                }
-            }
-        }
-        response = self.app.post('/api/article', json=data)
-        assert response.status_code == 201
-        document = response.json
-        article = document['data']
-        person = article['relationships']['author']['data']
-        assert person['type'] == 'person'
-        assert person['id'] == '1'
-
-    def test_unicode_primary_key(self):
-        """Test for creating a resource with a unicode primary key."""
-        data = dict(data=dict(type='tag', attributes=dict(name=u'Юникод')))
-        response = self.app.post('/api/tag', json=data)
-        assert response.status_code == 201
-        document = response.json
-        tag = document['data']
-        assert tag['attributes']['name'] == u'Юникод'
-
-    def test_primary_key_as_id(self):
-        """Tests the even if a primary key is not named ``id``, it still
-        appears in an ``id`` key in the response.
-
-        """
-        data = dict(data=dict(type='tag', attributes=dict(name=u'foo')))
-        response = self.app.post('/api/tag', json=data)
-        assert response.status_code == 201
-        tag = response.json['data']
-        assert tag['id'] == u'foo'
-
-    def test_collection_name(self):
-        """Tests for creating a resource with an alternate collection name."""
-        self.manager.create_api(self.Person, methods=['POST'], collection_name='people')
-        data = dict(data=dict(type='people'))
-        response = self.app.post('/api/people', json=data)
-        assert response.status_code == 201
-        person = response.json['data']
-        assert person['type'] == 'people'
 
     def test_custom_serialization(self):
         """Tests for custom deserialization."""
@@ -524,70 +412,6 @@ class TestCreating(ManagerTestBase):
         keywords = ['deserialize', 'expected', 'type', '"article"', '"person"',
                     'linkage object', 'relationship', '"articles"']
         check_sole_error(response, 409, keywords)
-
-
-class TestProcessors(ManagerTestBase):
-    """Tests for pre- and postprocessors."""
-
-    def setUp(self):
-        super(TestProcessors, self).setUp()
-
-        class Person(self.Base):
-            __tablename__ = 'person'
-            id = Column(Integer, primary_key=True)
-            name = Column(Unicode)
-
-        self.Person = Person
-        self.Base.metadata.create_all()
-
-    def test_preprocessor(self):
-        """Tests :http:method:`post` requests with a preprocessor function."""
-
-        def set_name(data=None, **kw):
-            """Sets the name attribute of the incoming data object, regardless
-            of the value requested by the client.
-
-            """
-            if data is not None:
-                data['data']['attributes']['name'] = u'bar'
-
-        preprocessors = dict(POST_RESOURCE=[set_name])
-        self.manager.create_api(self.Person, methods=['POST'],
-                                preprocessors=preprocessors)
-        data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        person = document['data']
-        assert person['attributes']['name'] == 'bar'
-
-    def test_postprocessor(self):
-        """Tests that a postprocessor is invoked when creating a resource."""
-
-        def modify_result(result=None, **kw):
-            result['foo'] = 'bar'
-
-        postprocessors = dict(POST_RESOURCE=[modify_result])
-        self.manager.create_api(self.Person, methods=['POST'],
-                                postprocessors=postprocessors)
-        data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        document = response.json
-        assert document['foo'] == 'bar'
-
-    def test_postprocessor_can_rollback_transaction(self):
-        """Tests that a postprocessor can rollback the transaction."""
-
-        def rollback_transaction(result=None, **kw):
-            self.session.rollback()
-
-        postprocessors = dict(POST_RESOURCE=[rollback_transaction])
-        self.manager.create_api(self.Person, methods=['POST'], postprocessors=postprocessors)
-        data = dict(data=dict(type='person'))
-        response = self.app.post('/api/person', json=data)
-        assert response.status_code == 201
-        assert self.session.query(self.Person).count() == 0
 
 
 class TestAssociationProxy(ManagerTestBase):
