@@ -44,7 +44,7 @@ class BaseTestClass:
         self.session.close()
 
     @staticmethod
-    def _decode_and_validate(response, expected_response_code, error_msg=None):
+    def parse_and_validate_response(response, expected_response_code, error_msg=None):
         assert response.status_code == expected_response_code
         if expected_response_code == http.HTTPStatus.NO_CONTENT:
             return
@@ -64,7 +64,7 @@ class BaseTestClass:
             headers: Optional[Dict[str, Any]] = None
     ):
         response = self.client.get(uri, query_string=query_string, headers=headers)
-        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
+        return self.parse_and_validate_response(response, expected_response_code, error_msg=error_msg)
 
     def post_and_validate(
             self,
@@ -74,7 +74,7 @@ class BaseTestClass:
             **kwargs
     ):
         response = self.client.post(uri, **kwargs)
-        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
+        return self.parse_and_validate_response(response, expected_response_code, error_msg=error_msg)
 
     def patch_and_validate(
             self,
@@ -84,4 +84,4 @@ class BaseTestClass:
             error_msg: Optional[str] = None
     ):
         response = self.client.patch(uri, json=json)
-        return self._decode_and_validate(response, expected_response_code, error_msg=error_msg)
+        return self.parse_and_validate_response(response, expected_response_code, error_msg=error_msg)

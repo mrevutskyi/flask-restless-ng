@@ -18,7 +18,7 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         self.Person = Person
         self.db.create_all()
         self.manager = APIManager(self.flaskapp, session=self.db.session)
-        self.manager.create_api(self.Person, methods=['POST'])
+        self.manager.create_api(self.Person, methods=['POST', 'DELETE'])
 
     def test_create(self):
         """Tests for creating a resource."""
@@ -30,3 +30,11 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         # TODO: To make this test more robust, should query for person objects.
         assert person['id'] == '1'
         assert person['type'] == 'person'
+
+    def test_delete(self):
+        """Tests for deleting a resource."""
+        self.session.add(self.Person(id=1))
+        self.session.commit()
+        response = self.app.delete('/api/person/1')
+        assert response.status_code == 204
+        assert self.Person.query.count() == 0
