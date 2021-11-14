@@ -305,7 +305,7 @@ class API(APIBase):
             data = self.serializer.serialize(instance, only=fields_for_this)
         except SerializationException as exception:
             detail = 'Failed to serialize object'
-            return error_response(400, cause=exception, detail=detail)
+            return error_response(500, cause=exception, detail=detail)
         # Determine the value of the primary key for this instance and
         # encode URL-encode it (in case it is a Unicode string).
         primary_key = self.api_manager.primary_key_value(instance, as_string=True)

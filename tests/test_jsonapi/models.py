@@ -6,11 +6,14 @@ from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import Interval
+from sqlalchemy import String
 from sqlalchemy import Time
 from sqlalchemy import Unicode
 from sqlalchemy import func
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 
 from ..helpers import DeclarativeMeta
@@ -48,6 +51,22 @@ class Tag(Base):
     id = Column(Integer, primary_key=True)
     name = Column(Unicode)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.current_timestamp())
+
+
+class Post(Base):
+    __tablename__ = 'post'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(64))
+    tags = association_proxy("posttags", "tag", creator=lambda tag: PostTag(tag=tag))
+
+
+class PostTag(Base):
+    __tablename__ = 'posttag'
+    # id = Column(Integer)
+    post_id = Column(Integer, ForeignKey('post.id'), primary_key=True)
+    tag_id = Column(Integer, ForeignKey('tag.id'), primary_key=True)
+    tag = relationship(Tag)
+    post = relationship(Post, backref=backref('posttags'))
 
 
 class Parent(Base):

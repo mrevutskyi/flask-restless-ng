@@ -23,12 +23,16 @@ import pytest
 from dateutil import parser
 
 from flask_restless import APIManager
+from flask_restless import DeserializationException
+from flask_restless import SerializationException
 
 from ..conftest import BaseTestClass
 from .models import Article
 from .models import Base
 from .models import Comment
 from .models import Person
+from .models import Post
+from .models import Tag
 from .models import UnicodePK
 from .models import Various
 
@@ -49,6 +53,8 @@ class TestCreatingResources(BaseTestClass):
         manager.create_api(Person, methods=['POST'])
         manager.create_api(Various, methods=['POST'])
         manager.create_api(UnicodePK, methods=['POST'])
+        manager.create_api(Post, methods=['POST'], exclude=['posttags'])
+        manager.create_api(Tag, methods=['POST'])
         manager.create_api(Comment)
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -471,6 +477,257 @@ class TestCreatingResources(BaseTestClass):
         document = self.post_and_validate('/api/people', json=data)
         assert document['data']['type'] == 'people'
 
+    @pytest.mark.parametrize('url', ['/api/article/1/author', '/api/person/1/articles'])
+    def test_to_one_related_resource_url(self, url):
+        """Tests that attempting to add to a related resource URL (instead of a relationship URL) yields an error response."""
+        self.session.add(Article(id=1))
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        response = self.client.post(url, json={})
+        assert response.status_code == 405
+
+    def test_missing_data(self):
+        """Tests that an attempt to update a resource without providing a "data" element yields an error."""
+        data = dict(type='person')
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='Failed to deserialize object: missing "data" element')
+
+    def test_to_one_relationship_missing_id(self):
+        """
+        Tests that the server rejects a request to create a resource  with a to-one relationship when the relationship linkage object
+        is missing an ``id`` element.
+        """
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': {
+                            'type': 'person'
+                        }
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/article', json=data, expected_response_code=400,
+                               error_msg='Failed to deserialize object: missing "id" element in linkage object for relationship "author"')
+
+    def test_to_one_relationship_missing_type(self):
+        """
+        Tests that the server rejects a request to create a resource with a to-one relationship when the relationship linkage object
+        is missing a ``type`` element.
+        """
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': {
+                            'id': '1'
+                        }
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/article', json=data, expected_response_code=400,
+                               error_msg='Failed to deserialize object: missing "type" element in linkage object for relationship "author"')
+
+    def test_to_one_relationship_conflicting_type(self):
+        """
+        Tests that the server rejects a request to create a resource with a to-one relationship when the relationship linkage object
+        has a ``type`` element that conflicts with the actual type of the related resource.
+        """
+
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': {
+                            'id': '1',
+                            'type': 'article'
+                        }
+                    }
+                }
+            }
+        }
+        self.post_and_validate(
+            '/api/article', json=data, expected_response_code=409,
+            error_msg='Failed to deserialize object: expected type "author" but got type "person" in linkage object for relationship "article"')
+
+    def test_to_many_relationship_missing_id(self):
+        """
+        Tests that the server rejects a request to create a resource with a to-many relationship when any of the relationship linkage
+        objects is missing an ``id`` element.
+        """
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'articles': {
+                        'data': [
+                            {'type': 'article'}
+                        ]
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/person', json=data, expected_response_code=400,
+                               error_msg='Failed to deserialize object: missing "id" element in linkage object for relationship "articles"')
+
+    def test_to_many_relationship_missing_type(self):
+        """
+        Tests that the server rejects a request to create a resource with a to-many relationship when any of the relationship linkage
+        objects is missing a ``type`` element.
+        """
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'articles': {
+                        'data': [
+                            {'id': '1'}
+                        ]
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/person', json=data, expected_response_code=400,
+                               error_msg='Failed to deserialize object: missing "type" element in linkage object for relationship "articles"')
+
+    def test_to_many_relationship_conflicting_type(self):
+        """
+        Tests that the server rejects a request to create a resource with a to-many relationship when any of the relationship linkage
+        objects has a ``type`` element that conflicts with the actual type of the related resource.
+        """
+        data = {
+            'data': {
+                'type': 'person',
+                'relationships': {
+                    'articles': {
+                        'data': [
+                            {
+                                'id': '1',
+                                'type': 'person'
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        self.post_and_validate('/api/article', json=data, expected_response_code=409,
+                               error_msg='Failed to deserialize object: expected type "article" but got type "person"')
+
+    def test_create_that_has_association_proxy(self):
+        """
+        Test for creating a new instance of the database model that has a many-to-many relation that uses an association object to allow extra
+        information to be stored on the association table.
+        """
+        self.session.add_all([Tag(id=1), Tag(id=2)])
+        self.session.commit()
+        data = {
+            'data': {
+                'type': 'post',
+                'relationships': {
+                    'tags': {
+                        'data': [
+                            {'type': 'tag', 'id': '1'},
+                            {'type': 'tag', 'id': '2'}
+                        ]
+                    }
+                }
+            }
+        }
+        document = self.post_and_validate('/api/post', json=data)
+        tags = document['data']['relationships']['tags']['data']
+        assert ['1', '2'] == sorted(tag['id'] for tag in tags)
+
+
+class TestCustomSerialization(BaseTestClass):
+    """Tests that include custom serializer and deserializer."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.manager = APIManager(self.app, session=self.session)
+        Base.metadata.create_all(bind=self.engine)
+        yield
+        Base.metadata.drop_all(bind=self.engine)
+
+    def test_custom_serialization(self):
+        """Tests for custom deserialization."""
+        test_response = {
+            'type': 'custom',
+            'id': '1',
+        }
+
+        class CustomSerializer:
+            @staticmethod
+            def serialize(*_, **__):
+                return test_response
+
+        class CustomDeserializer:
+            @staticmethod
+            def deserialize(*_, **__):
+                instance = Person(pk=1, name='Custom')
+                return instance
+
+        # POST will deserialize once and serialize once
+        self.manager.create_api(Person, methods=['POST'], serializer=CustomSerializer(), deserializer=CustomDeserializer())
+        data = dict(data=dict(type='person', attributes=dict(foo='bar')))
+        document = self.post_and_validate('/api/person', json=data)
+        person = self.session.query(Person).get(1)
+        assert person.name == 'Custom'
+        assert document['data'] == test_response
+
+    def test_serialization_exception_included(self):
+        """Tests that exceptions are caught when trying to serialize included resources."""
+
+        class CustomSerializer:
+            def serialize(self, instance, *args, **kwargs):
+                raise SerializationException(instance, resource_id=instance.pk, resource_type='person')
+
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        self.manager.create_api(Article, methods=['POST'])
+        self.manager.create_api(Person, serializer=CustomSerializer())
+        data = {
+            'data': {
+                'type': 'article',
+                'relationships': {
+                    'author': {
+                        'data': {
+                            'type': 'person',
+                            'id': 1
+                        }
+                    }
+                }
+            }
+        }
+        query_string = {'include': 'author'}
+        self.post_and_validate('/api/article', json=data, query_string=query_string, expected_response_code=500,
+                               error_msg='Failed to serialize included resource of type person and ID 1')
+
+    def test_deserialization_exception(self):
+        """Tests that exceptions are caught when a custom deserialization method raises an exception."""
+
+        class CustomDeserializer:
+            def deserialize(self, *args, **kwargs):
+                raise DeserializationException()
+
+        self.manager.create_api(Person, methods=['POST'], deserializer=CustomDeserializer())
+        data = dict(data=dict(type='person'))
+        self.post_and_validate('/api/person', json=data, expected_response_code=400, error_msg='Failed to deserialize object')
+
+    def test_serialization_exception(self):
+        """Tests that exceptions are caught when a custom serialization method raises an exception."""
+
+        class CustomSerializer:
+            def serialize(self, instance, *args, **kwargs):
+                raise SerializationException(instance, resource_id=instance.pk, resource_type='person')
+
+        self.manager.create_api(Person, methods=['POST'], url_prefix='/api', serializer=CustomSerializer())
+        data = dict(data=dict(type='person'))
+        self.post_and_validate('/api/person', json=data, expected_response_code=500, error_msg='Failed to serialize object')
+
 
 class TestProcessors(BaseTestClass):
     """Tests for pre- and post-processors."""
@@ -485,7 +742,7 @@ class TestProcessors(BaseTestClass):
     def test_preprocessor(self):
         """Tests :http:method:`post` requests with a preprocessor function."""
 
-        def set_name(data=None, **kw):
+        def set_name(data=None, **__):
             """Sets the name attribute of the incoming data object, regardless
             of the value requested by the client.
 
@@ -495,14 +752,14 @@ class TestProcessors(BaseTestClass):
 
         preprocessors = dict(POST_RESOURCE=[set_name])
         self.manager.create_api(Person, methods=['POST'], preprocessors=preprocessors)
-        data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
-        document = self.post_and_validate('/api/person', json=data)
+        post_data = dict(data=dict(type='person', attributes=dict(name=u'foo')))
+        document = self.post_and_validate('/api/person', json=post_data)
         assert document['data']['attributes']['name'] == 'bar'
 
     def test_postprocessor(self):
         """Tests that a postprocessor is invoked when creating a resource."""
 
-        def modify_result(result=None, **kw):
+        def modify_result(result=None, **__):
             result['foo'] = 'bar'
 
         postprocessors = dict(POST_RESOURCE=[modify_result])
@@ -516,7 +773,7 @@ class TestProcessors(BaseTestClass):
     def test_postprocessor_can_rollback_transaction(self):
         """Tests that a postprocessor can rollback the transaction."""
 
-        def rollback_transaction(result=None, **kw):
+        def rollback_transaction(**__):
             self.session.rollback()
 
         postprocessors = dict(POST_RESOURCE=[rollback_transaction])
