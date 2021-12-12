@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Query
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 
@@ -99,6 +100,10 @@ class Various(Base):
                 return None
             return self.age < 18
         return None
+
+    @classmethod
+    def query(cls):
+        return Query(cls).filter(cls.id < 2)
 
 
 class UnicodePK(Base):

@@ -17,6 +17,7 @@ from .models import Child
 from .models import Comment
 from .models import Parent
 from .models import Person
+from .models import Various
 
 
 class TestFetching(BaseTestClass):
@@ -34,6 +35,8 @@ class TestFetching(BaseTestClass):
         manager.create_api(Comment)
         manager.create_api(Parent, page_size=0)
         manager.create_api(Child)
+        manager.create_api(Various)
+        self.manager = manager
 
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -327,3 +330,126 @@ class TestFetching(BaseTestClass):
         links = document['links']
         assert links['self'] == '/api/article/1/relationships/author'
         assert links['related'] == '/api/article/1/author'
+
+    def test_wrong_accept_header(self):
+
+        """Tests that if a client specifies only :https:header:`Accept`
+        headers with non-JSON API media types, then the server responds
+        with a :https:status:`406`.
+
+        """
+        headers = {'Accept': 'application/json'}
+        response = self.client.get('/api/person', headers=headers)
+        assert response.status_code == 406
+
+    def test_callable_query(self):
+        """Tests for making a query with a custom callable ``query`` attribute.
+
+        For more information, see pull request #133.
+
+        """
+        self.session.add_all([Various(id=1), Various(id=2)])
+        self.session.commit()
+        document = self.fetch_and_validate('/api/various')
+        assert ['1'] == sorted(comment['id'] for comment in document['data'])
+
+    def test_collection_name_multiple(self):
+        """Tests for fetching multiple resources with an alternate collection name. """
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        self.manager.create_api(Person, collection_name='people')
+        document = self.fetch_and_validate('/api/people')
+        people = document['data']
+        assert len(people) == 1
+        person = people[0]
+        assert person['id'] == '1'
+        assert person['type'] == 'people'
+
+    def test_pagination_links_empty_collection(self):
+        """Tests that pagination links work correctly for an empty collection."""
+        base_url = '/api/person'
+        document = self.fetch_and_validate(base_url)
+        pagination = document['links']
+        base_url = f'{base_url}?'
+        assert base_url in pagination['first']
+        assert 'page[number]=1' in pagination['first']
+        assert base_url in pagination['last']
+        assert 'page[number]=1' in pagination['last']
+        assert pagination['prev'] is None
+        assert pagination['next'] is None
+
+    def test_link_headers_empty_collection(self):
+        """Tests that :https:header:`Link` headers work correctly for an empty collection."""
+        base_url = '/api/person'
+        response = self.client.get(base_url)
+        assert response.status_code == 200
+        base_url = f'{base_url}?'
+        # There should be exactly two, one for the first page and one
+        # for the last page; there are no previous or next pages, so
+        # there cannot be any valid Link headers for them.
+        links = response.headers['Link'].split(',')
+        assert len(links) == 2
+        # Decide which link is for the first page and which is for the last.
+        if 'first' in links[0]:
+            first, last = links
+        else:
+            last, first = links
+        assert base_url in first
+        assert 'rel="first"' in first
+        assert 'page[number]=1' in first
+        assert base_url in last
+        assert 'rel="last"' in last
+        assert 'page[number]=1' in last
+
+    def test_pagination_with_query_parameter(self):
+        """Tests that the URLs produced for pagination links include
+        non-pagination query parameters from the original request URL.
+
+        """
+        base_url = '/api/person'
+        document = self.fetch_and_validate(base_url, query_string={'foo': 'bar'})
+        pagination = document['links']
+        base_url = f'{base_url}?'
+        # There are no previous and next links in this case, so we only
+        # check the first and last links.
+        assert base_url in pagination['first']
+        assert 'foo=bar' in pagination['first']
+        assert base_url in pagination['last']
+        assert 'foo=bar' in pagination['last']
+
+    def test_sorting_null_field(self):
+        """Tests that sorting by a nullable field causes resources with a null attribute value to appear first."""
+        self.session.bulk_save_objects([
+            Person(pk=1),
+            Person(pk=2, name=u'foo'),
+            Person(pk=3, name=u'bar'),
+            Person(pk=4)
+        ])
+        self.session.commit()
+        document = self.fetch_and_validate('/api/person', query_string={'sort': 'name'})
+        people = document['data']
+        assert len(people) == 4
+        person_ids = [person['id'] for person in people]
+        assert ['3', '2'] == person_ids[-2:]
+        assert {'1', '4'} == set(person_ids[:2])
+
+    def test_alternative_collection_name(self):
+        """Tests for fetching a single resource with an alternate collection name."""
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        self.manager.create_api(Person, collection_name='people', url_prefix='/api2')
+        document = self.fetch_and_validate('/api2/people/1')
+        person = document['data']
+        assert person['id'] == '1'
+        assert person['type'] == 'people'
+
+    def test_attributes_in_url(self):
+        """Tests that a user attempting to access an attribute in the
+        URL instead of a relation yields a meaningful error response.
+
+        For more information, see issue #213.
+
+        """
+        self.session.add(Person(pk=1))
+        self.session.commit()
+        self.fetch_and_validate('/api/person/1/id', expected_response_code=404, error_msg='No such relation: id')

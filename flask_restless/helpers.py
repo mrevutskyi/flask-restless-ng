@@ -30,6 +30,7 @@ from sqlalchemy.ext.hybrid import HYBRID_PROPERTY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import ColumnProperty
+from sqlalchemy.orm import Query
 from sqlalchemy.orm import RelationshipProperty as RelProperty
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.attributes import QueryableAttribute
@@ -71,7 +72,9 @@ def session_query(session, model):
             query = model.query()
         else:
             query = model.query
-        if hasattr(query, 'filter'):
+        if isinstance(query, Query):
+            if query.session is None:
+                query = query.with_session(session)
             return query
     return session.query(model)
 
