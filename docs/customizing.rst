@@ -155,7 +155,7 @@ Define your serialization functions like this::
         def relationship_columns(self):
             return set(self.relationships)
 
-        def serialize(instance, only=None):
+        def serialize(self, instance, only=None):
             return {'id': instance.id, 'type': 'custom', 'attributes': {}}
 
 ``instance`` is an instance of a SQLAlchemy model and the ``only`` argument is
@@ -467,7 +467,7 @@ authentication function can be implemented like this::
         # instance of the model.
         if not is_authorized_to_modify(current_user, instance_id):
             raise ProcessingException(detail='Not Authorized', status=401)
-    manager.create_api(Person, preprocessors=dict(GET_SINGLE=[check_auth]))
+    manager.create_api(Person, preprocessors=dict(GET_RESOURCE=[check_auth]))
 
 The :exc:`ProcessingException` allows you to specify as keyword arguments to
 the constructor the elements of the JSON API `error object`_. If no arguments
