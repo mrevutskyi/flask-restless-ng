@@ -4,8 +4,9 @@ import pytest
 from flask_restless import APIManager
 
 from ..conftest import BaseTestClass
-from .models import Article, Comment
+from .models import Article
 from .models import Base
+from .models import Comment
 from .models import Person
 
 
