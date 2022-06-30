@@ -416,17 +416,16 @@ def search(session, model, filters=None, sort=None, _initial_query=None):
     if sort:
         for (symbol, field_name) in sort:
             direction_name = 'asc' if symbol == '+' else 'desc'
-            if '.' in field_name:
-                field_name, field_name_in_relation = field_name.split('.')
-                relation_model = aliased(get_related_model(model, field_name))
-                field = get_field(relation_model, field_name_in_relation)
-                direction = getattr(field, direction_name)
-                query = query.join(relation_model)
-                query = query.order_by(direction())
-            else:
-                field = get_field(model, field_name)
-                direction = getattr(field, direction_name)
-                query = query.order_by(direction())
+            related_model = model
+            while '.' in field_name:
+                field_name, _, field_name_in_relation = field_name.partition('.')
+                related_model = aliased(get_related_model(related_model, field_name))
+                field_name = field_name_in_relation
+                query = query.join(related_model)
+
+            field = get_field(related_model, field_name)
+            direction = getattr(field, direction_name)
+            query = query.order_by(direction())
     else:
         pks = primary_key_names(model)
         pk_order = (getattr(model, field).asc() for field in pks)

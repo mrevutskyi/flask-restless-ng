@@ -9,6 +9,9 @@ Upcoming version:
 - Fix for an incorrect error message
 - Returns 500 instead 400 response code in case of serialization errors in POST requests
 
+Version 2.3.0
+------------
+- Allow sorting of nested fields
 
 Version 2.2.9
 -------------
