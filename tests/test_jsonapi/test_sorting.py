@@ -4,7 +4,7 @@ import pytest
 from flask_restless import APIManager
 
 from ..conftest import BaseTestClass
-from .models import Article
+from .models import Article, Comment
 from .models import Base
 from .models import Person
 
@@ -22,6 +22,7 @@ class TestSorting(BaseTestClass):
         manager = APIManager(self.app, session=self.session)
         manager.create_api(Article)
         manager.create_api(Person)
+        manager.create_api(Comment)
         Base.metadata.create_all(bind=self.engine)
         yield
         Base.metadata.drop_all(bind=self.engine)
@@ -165,3 +166,66 @@ class TestSorting(BaseTestClass):
     def test_bad_request_on_incorrect_sorting_relationship_field(self):
         query_string = {'sort': 'articles.unknown'}
         self.fetch_and_validate('/api/person', query_string=query_string, expected_response_code=400, error_msg='No such field unknown')
+
+    def test_sort_nested_relationship_attributes(self):
+        """Tests that the client can sort by nested relationship attributes.
+
+        For more information, see the `Sorting`_ section of the JSON API
+        specification.
+
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
+
+        """
+        self.session.add_all([
+            Person(pk=1, age=20),
+            Person(pk=2, age=10),
+            Person(pk=3, age=30),
+            Article(id=1, author_id=1),
+            Article(id=2, author_id=2),
+            Article(id=3, author_id=3),
+            Comment(id=1, author_id=1, article_id=1),
+            Comment(id=2, author_id=1, article_id=2),
+            Comment(id=3, author_id=1, article_id=3),
+            Comment(id=4, author_id=2, article_id=1),
+            Comment(id=5, author_id=2, article_id=2),
+            Comment(id=6, author_id=3, article_id=1)
+        ])
+        self.session.commit()
+        query_string = {'sort': 'article.author.age'}
+        document = self.fetch_and_validate('/api/comment', query_string=query_string)
+        comments = document['data']
+        assert ['2', '5', '1', '4', '6', '3'] == [comment['id'] for comment in comments]
+
+    def test_sort_multiple_nested_relationship_attributes(self):
+        """Tests that the client can sort by multiple nested relationship
+        attributes.
+
+        For more information, see the `Sorting`_ section of the JSON API
+        specification.
+
+        .. _Sorting: https://jsonapi.org/format/#fetching-sorting
+
+        """
+        self.session.bulk_save_objects([
+            Person(pk=1, age=2, name=u'b'),
+            Person(pk=2, age=1, name=u'd'),
+            Person(pk=3, age=1, name=u'a'),
+            Article(id=1, author_id=1),
+            Article(id=2, author_id=2),
+            Article(id=3, author_id=3),
+            Comment(id=1, author_id=1, article_id=1),
+            Comment(id=2, author_id=1, article_id=2),
+            Comment(id=3, author_id=1, article_id=3),
+            Comment(id=4, author_id=2, article_id=1),
+            Comment(id=5, author_id=2, article_id=2),
+            Comment(id=6, author_id=3, article_id=1)
+        ])
+        self.session.commit()
+        query_string = {'sort': 'article.author.age,article.author.name'}
+        document = self.fetch_and_validate('/api/comment', query_string=query_string)
+        comments = document['data']
+        assert ['3', '2', '5', '1', '4', '6'] == [comment['id'] for comment in comments]
+
+    def test_bad_request_on_incorrect_sorting_nested_relationship_field(self):
+        query_string = {'sort': 'article.author.unknown'}
+        self.fetch_and_validate('/api/comment', query_string=query_string, expected_response_code=400, error_msg='No such field unknown')
