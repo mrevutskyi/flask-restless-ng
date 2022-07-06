@@ -1,12 +1,10 @@
 # Use Travis's container-based infrastructure.
-sudo: false
-
 language: python
 
 python:
   - "3.6"
   - "3.8"
-  - "3.10"
+  - "3.9"
   - "pypy3"
 
 addons:
