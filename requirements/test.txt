@@ -8,4 +8,7 @@ testing.postgresql
 # linting and formatting
 flake8
 isort
+
+# Running tests
 pytest
+tox

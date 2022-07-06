@@ -5,12 +5,13 @@ language: python
 
 python:
   - "3.6"
-  - "3.7"
+  - "3.8"
+  - "3.10"
   - "pypy3"
 
 addons:
   # HACK Need to update the installed version of PostgreSQL, because it doesn't
-  # implement all of the network operators (specifically the &&
+  # implement all the network operators (specifically the &&
   # operator). Travis claims that version 9.4 is installed by default, but it
   # claims that && is unknown unless this addon is here.
   postgresql: "9.4"
