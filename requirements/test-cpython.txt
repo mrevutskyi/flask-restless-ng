@@ -3,4 +3,5 @@ psycopg2-binary
 
 # mypy requires types-ast and it does not build in pypy
 mypy
+types-python-dateutil # for mypy
 sqlalchemy2-stubs

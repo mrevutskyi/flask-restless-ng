@@ -14,11 +14,19 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
 
         class Person(self.db.Model):
             id = self.db.Column(self.db.Integer, primary_key=True)
+            team_id = self.db.Column(self.db.Integer, self.db.ForeignKey('team.id'))
+
+        class Team(self.db.Model):
+            id = self.db.Column(self.db.Integer, primary_key=True)
+
+            members = self.db.relationship('Person')
 
         self.Person = Person
+        self.Team = Team
         self.db.create_all()
         self.manager = APIManager(self.flaskapp, session=self.db.session)
-        self.manager.create_api(self.Person, methods=['POST', 'DELETE'])
+        self.manager.create_api(self.Person, methods=['GET', 'POST', 'DELETE'])
+        self.manager.create_api(self.Team, methods=['GET'])
 
     def test_create(self):
         """Tests for creating a resource."""
@@ -38,3 +46,13 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         response = self.app.delete('/api/person/1')
         assert response.status_code == 204
         assert self.Person.query.count() == 0
+
+    def test_get_many(self):
+        """Tests pagination in Flask-SQLAlchemy"""
+        self.session.add(self.Team(id=1))
+        self.session.bulk_save_objects([
+            self.Person(id=i, team_id=1) for i in range(50)
+        ])
+        self.session.commit()
+        response = self.app.get('/api/team/1/members')
+        assert response.status_code == 200

@@ -1497,8 +1497,7 @@ class APIBase(ModelView):
         # its built-in pagination. Otherwise, we need to manually
         # compute the page numbers, the number of results, etc.
         if hasattr(items, 'paginate'):
-            pagination = items.paginate(page_number, page_size,
-                                        error_out=False)
+            pagination = items.paginate(page=page_number, per_page=page_size, error_out=False)
             num_results = pagination.total
             first = 1
             last = pagination.pages

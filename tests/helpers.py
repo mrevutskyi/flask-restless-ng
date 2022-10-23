@@ -10,6 +10,7 @@
 # License version 3 and under the 3-clause BSD license. For more
 # information, see LICENSE.AGPL and LICENSE.BSD.
 """Helper functions for unit tests."""
+import json
 import unittest
 import uuid
 from datetime import date
@@ -21,7 +22,6 @@ from json import JSONEncoder
 
 import jsonschema
 from flask import Flask
-from flask import json
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import UUID
@@ -280,6 +280,11 @@ class FlaskSQLAlchemyTestBase(FlaskTestBase, DatabaseMixin):
         # read more like the tests for plain old SQLAlchemy.
         self.db = SQLAlchemy(self.flaskapp)
         self.session = self.db.session
+        self.client = self.flaskapp.test_client()
+
+        # 'Flask-SQLAlchemy > 3.0 requires app context for everything
+        self.app_context = self.flaskapp.app_context()
+        self.app_context.push()
 
     def tearDown(self):
         """Drops all tables and unregisters Flask-SQLAlchemy session
@@ -287,6 +292,7 @@ class FlaskSQLAlchemyTestBase(FlaskTestBase, DatabaseMixin):
 
         """
         self.db.drop_all()
+        self.app_context.pop()
         unregister_fsa_session_signals()
 
 

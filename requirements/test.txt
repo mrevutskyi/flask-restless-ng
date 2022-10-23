@@ -2,6 +2,8 @@
 jsonschema
 savalidation
 
+PyMySQL # required after Flask_SQLAlchemy 3.0
+
 # For testing PostgreSQL specific operations...
 testing.postgresql
 
