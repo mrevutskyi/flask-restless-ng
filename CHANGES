@@ -4,6 +4,10 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.4.0 (11/11/2022):
+-------------
+- Clients can disable default sorting by using `sort=0` query parameter
+
 Version 2.3.1:
 -------------
 - Fix for an incorrect error message

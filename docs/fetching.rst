@@ -531,6 +531,10 @@ Clients can sort according to the sorting protocol described in the `Sorting
 specification. Sorting by a nullable attribute will cause resources with null
 attributes to appear first.
 
+If ``sort`` parameter is not specified, data is sorted using the primary key
+
+Clients can disable default sorting by using ``sort=0``
+
 
 .. _pagination:
 

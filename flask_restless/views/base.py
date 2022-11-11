@@ -147,8 +147,12 @@ def collection_parameters():
         # Determine sorting options.
         sort = request.args.get(SORT_PARAM)
         if sort:
-            sort = [('-', value[1:]) if value.startswith('-') else ('+', value)
-                    for value in sort.split(',')]
+            if sort == '0':
+                # '0' disables default sorting
+                sort = None
+            else:
+                sort = [('-', value[1:]) if value.startswith('-') else ('+', value)
+                        for value in sort.split(',')]
         else:
             sort = []
     except (TypeError, KeyError, ValueError) as e:

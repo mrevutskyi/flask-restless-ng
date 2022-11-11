@@ -110,3 +110,13 @@ class UnicodePK(Base):
     """Model with a primary key that has Unicode type. """
     __tablename__ = 'unicode_pk'
     name = Column(Unicode, primary_key=True)
+
+
+class Unsorted(Base):
+    """Model that should not have a primary_key to dest disabled sorting.
+
+    SQLAlchemy does not actually let us define a model without a primary key,
+    so the table has to be created without the PK manually before create_all()
+    """
+    __tablename__ = 'unsorted'
+    id = Column(Integer, primary_key=True)

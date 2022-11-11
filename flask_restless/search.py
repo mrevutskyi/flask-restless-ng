@@ -426,7 +426,7 @@ def search(session, model, filters=None, sort=None, _initial_query=None):
             field = get_field(related_model, field_name)
             direction = getattr(field, direction_name)
             query = query.order_by(direction())
-    else:
+    elif sort is not None:
         pks = primary_key_names(model)
         pk_order = (getattr(model, field).asc() for field in pks)
         query = query.order_by(*pk_order)

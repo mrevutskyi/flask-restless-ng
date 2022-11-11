@@ -17,6 +17,7 @@ from .models import Child
 from .models import Comment
 from .models import Parent
 from .models import Person
+from .models import Unsorted
 from .models import Various
 
 
@@ -36,7 +37,16 @@ class TestFetching(BaseTestClass):
         manager.create_api(Parent, page_size=0)
         manager.create_api(Child)
         manager.create_api(Various)
+        manager.create_api(Unsorted)
         self.manager = manager
+
+        with self.engine.connect() as connection:
+            connection.execute("""
+            create table unsorted
+                (
+                    id int not null
+                );
+            """)
 
         Base.metadata.create_all(bind=self.engine)
         yield
@@ -432,6 +442,19 @@ class TestFetching(BaseTestClass):
         person_ids = [person['id'] for person in people]
         assert ['3', '2'] == person_ids[-2:]
         assert {'1', '4'} == set(person_ids[:2])
+
+    def test_disabling_sorting(self):
+        """Tests that sorting by a nullable field causes resources with a null attribute value to appear first."""
+        self.session.add(Unsorted(id=2))
+        self.session.add(Unsorted(id=1))
+        self.session.add(Unsorted(id=4))
+        self.session.add(Unsorted(id=3))
+        self.session.commit()
+        document = self.fetch_and_validate('/api/unsorted', query_string={'sort': '0'})
+        ids = [item['id'] for item in document['data']]
+        assert ids == ['2', '1', '4', '3']
+        assert 'sort=0' in document['links']['first']
+        assert 'sort=0' in document['links']['last']
 
     def test_alternative_collection_name(self):
         """Tests for fetching a single resource with an alternate collection name."""
