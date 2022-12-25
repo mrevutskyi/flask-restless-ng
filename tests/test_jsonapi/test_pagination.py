@@ -55,7 +55,7 @@ class TestPagination(BaseTestClass):
         """
         self.session.bulk_save_objects([Person(pk=i) for i in range(25)])
         self.session.commit()
-        document = self.fetch_and_validate('/api/person')
+        document = self.fetch_and_validate('/api/person', headers={'test-header': 'ok'})
         pagination = document['links']
         assert '/api/person?' in pagination['first']
         assert 'page[number]=1' in pagination['first']
@@ -65,6 +65,13 @@ class TestPagination(BaseTestClass):
         assert '/api/person?' in pagination['next']
         assert 'page[number]=2' in pagination['next']
         assert len(document['data']) == 10
+
+    def test_x_forward_headers(self):
+        self.session.bulk_save_objects([Person(pk=i) for i in range(25)])
+        self.session.commit()
+        document = self.fetch_and_validate('/api/person', headers={'X-Forwarded-Host': 'some-domain.net', 'X-Forwarded-Proto': 'https'})
+        pagination = document['links']
+        assert pagination['first'] == 'https://some-domain.net/api/person?page[size]=10&page[number]=1'
 
     def test_client_page_and_size(self):
         """Tests that a request that specifies both page number and page size

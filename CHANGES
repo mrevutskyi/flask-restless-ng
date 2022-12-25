@@ -4,9 +4,14 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
-Version 2.4.0 (11/11/2022):
+Version 2.5.0 (2022-12-24):
+- Added support for X-Forwarded- headers (pagination links now use the original host/proto) (#38)
+
+
+Version 2.4.0 (2022-11-11):
 -------------
 - Clients can disable default sorting by using `sort=0` query parameter
+
 
 Version 2.3.1:
 -------------
@@ -14,9 +19,11 @@ Version 2.3.1:
 - Returns 500 instead 400 response code in case of serialization errors in POST requests
 - Fix for pagination Flask-SQLAlchemy (now works also with 3.0+) (#37)
 
+
 Version 2.3.0
 ------------
 - Allow sorting of nested fields
+
 
 Version 2.2.9
 -------------

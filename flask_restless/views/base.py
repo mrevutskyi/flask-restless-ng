@@ -815,14 +815,19 @@ class Paginated:
 
         """
         # Parse pieces of the URL requested by the client.
-        base_url = request.base_url
+        path = request.path
+        headers = request.headers
+        # If X-Forwarded- headers are present use their values to build the URL
+        # because request could be proxied by a load balancer
+        host = headers.get('X-Forwarded-Host', request.host)
+        proto = headers.get('X-Forwarded-Proto', request.scheme)
         query_params = request.args
         # Set the new query_parameters to be everything except the
         # pagination query parameters.
         new_query = {k: v for k, v in query_params.items() if k not in (PAGE_NUMBER_PARAM, PAGE_SIZE_PARAM)}
         new_query_string = '&'.join(map('='.join, new_query.items()))
         # Join the base URL with the query parameter string.
-        return '{0}?{1}'.format(base_url, new_query_string)
+        return f'{proto}://{host}{path}?{new_query_string}'
 
     @staticmethod
     def _to_url(base_url, query_params):
