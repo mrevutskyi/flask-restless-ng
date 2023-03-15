@@ -4,6 +4,9 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 2.5.1 (2023-22-15):
+- Restricted SQLAlchemy to <2.0. Support of 2.0 requires significant changes and will be a major release
+
 Version 2.5.0 (2022-12-24):
 - Added support for X-Forwarded- headers (pagination links now use the original host/proto) (#38)
 

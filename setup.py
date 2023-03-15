@@ -39,7 +39,7 @@ VERSION_RE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 #: required, so the user must install it explicitly.
 REQUIREMENTS = [
     'flask>=1.0',
-    'sqlalchemy>=1.3.6',
+    'sqlalchemy>=1.3.6,<2.0',
     'python-dateutil>2.2',
 ]
 
@@ -83,6 +83,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Database :: Front-Ends',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Python Modules'
