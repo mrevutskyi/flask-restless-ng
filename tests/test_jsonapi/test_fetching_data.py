@@ -9,6 +9,7 @@ the JSON API specification.
 import pytest
 
 from flask_restless import APIManager
+from sqlalchemy import text
 
 from ..conftest import BaseTestClass
 from .models import Article
@@ -40,13 +41,13 @@ class TestFetching(BaseTestClass):
         manager.create_api(Unsorted)
         self.manager = manager
 
-        with self.engine.connect() as connection:
-            connection.execute("""
+        with self.engine.connect():
+            self.session.execute(text("""
             create table unsorted
                 (
                     id int not null
                 );
-            """)
+            """))
 
         Base.metadata.create_all(bind=self.engine)
         yield

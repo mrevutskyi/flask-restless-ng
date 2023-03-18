@@ -81,7 +81,7 @@ class TestDeletingResources(BaseTestClass):
         headers = {'Accept': 'application/json'}
         response = self.client.delete('/api/person/1', headers=headers)
         assert response.status_code == 406
-        assert self.session.query(Person).get(1) is not None
+        assert self.session.get(Person, 1) is not None
 
     def test_related_resource_url_forbidden(self):
         """Tests that :http:method:`delete` requests to a related resource URL are forbidden."""
@@ -144,7 +144,7 @@ class TestProcessors(BaseTestClass):
         response = self.client.delete('/api/person/1')
         document = self.parse_and_validate_response(response, expected_response_code=403, error_msg='forbidden')
         assert len(document['errors']) == 1
-        assert self.session.query(Person).get(1) is not None
+        assert self.session.get(Person, 1) is not None
 
     def test_postprocessor(self):
         """Tests that a postprocessor is invoked when deleting a resource."""

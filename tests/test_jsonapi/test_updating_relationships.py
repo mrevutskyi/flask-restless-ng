@@ -64,7 +64,7 @@ class TestUpdatingRelationships(BaseTestClass):
         data = dict(data=dict(type='person', id='2'))
         response = self.client.patch('/api/article/1/relationships/author', json=data)
         assert response.status_code == 204
-        article = self.session.query(Article).get(1)
+        article = self.session.get(Article, 1)
         assert article.author_id == 2
 
     def test_remove_to_one(self):
@@ -86,7 +86,7 @@ class TestUpdatingRelationships(BaseTestClass):
         data = dict(data=None)
         response = self.client.patch('/api/article/1/relationships/author', json=data)
         assert response.status_code == 204
-        article = self.session.query(Article).get(1)
+        article = self.session.get(Article, 1)
         assert article.author_id is None
 
     def test_to_many(self):
@@ -109,7 +109,7 @@ class TestUpdatingRelationships(BaseTestClass):
                          {'type': 'article', 'id': '2'}]}
         response = self.client.patch('/api2/person/1/relationships/articles', json=data)
         assert response.status_code == 204
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         articles_ids = sorted(article.id for article in person.articles)
         assert articles_ids == [1, 2]
 
@@ -134,7 +134,7 @@ class TestUpdatingRelationships(BaseTestClass):
                          {'type': 'article', 'id': '3'}]}
         response = self.client.post('/api/person/1/relationships/articles', json=data)
         assert response.status_code == 204
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         articles_ids = sorted(article.id for article in person.articles)
         assert articles_ids == [1, 2, 3]
 
@@ -194,7 +194,7 @@ class TestUpdatingRelationships(BaseTestClass):
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.client.post('/api/person/1/relationships/articles', json=data)
         assert response.status_code == 204
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         assert [article.id for article in person.articles] == [1]
 
     def test_to_many_delete(self):
@@ -216,7 +216,7 @@ class TestUpdatingRelationships(BaseTestClass):
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.client.delete('/api2/person/1/relationships/articles', json=data)
         assert response.status_code == 204
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         assert [article.id for article in person.articles] == [2]
 
     def test_to_many_delete_nonexistent(self):
@@ -238,7 +238,7 @@ class TestUpdatingRelationships(BaseTestClass):
         data = {'data': [{'type': 'article', 'id': '2'}]}
         response = self.client.delete('/api2/person/1/relationships/articles', json=data)
         assert response.status_code == 204
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         assert [article.id for article in person.articles] == [1]
 
     def test_to_many_delete_forbidden(self):
@@ -260,5 +260,5 @@ class TestUpdatingRelationships(BaseTestClass):
         data = {'data': [{'type': 'article', 'id': '1'}]}
         response = self.client.delete('/api/person/1/relationships/articles', json=data)
         assert response.status_code == 403
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         assert [article.id for article in person.articles] == [1]

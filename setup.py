@@ -39,7 +39,7 @@ VERSION_RE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 #: required, so the user must install it explicitly.
 REQUIREMENTS = [
     'flask>=1.0',
-    'sqlalchemy>=1.3.6,<2.0',
+    'sqlalchemy>=1.4.0,<2.0',
     'python-dateutil>2.2',
 ]
 
@@ -79,7 +79,6 @@ setup(
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
@@ -97,7 +96,7 @@ setup(
     long_description=__doc__,
     name='Flask-Restless-NG',
     platforms='any',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     packages=['flask_restless', 'flask_restless.views'],
     test_suite='tests',
     tests_require=[],

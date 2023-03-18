@@ -236,7 +236,7 @@ class TestCreatingResources(BaseTestClass):
         assert person['type'] == 'person'
         assert person['id'] == '1'
         assert person['attributes']['name'] == 'foo'
-        instance = self.session.query(Person).get(1)
+        instance = self.session.get(Person, 1)
         assert instance.pk == 1
         assert instance.name == 'foo'
 
@@ -674,7 +674,7 @@ class TestCustomSerialization(BaseTestClass):
         self.manager.create_api(Person, methods=['POST'], serializer=CustomSerializer(), deserializer=CustomDeserializer())
         data = dict(data=dict(type='person', attributes=dict(foo='bar')))
         document = self.post_and_validate('/api/person', json=data)
-        person = self.session.query(Person).get(1)
+        person = self.session.get(Person, 1)
         assert person.name == 'Custom'
         assert document['data'] == test_response
 

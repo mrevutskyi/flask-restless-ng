@@ -989,7 +989,7 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         }
         response = self.app.patch('/api/person/1', json=data)
         assert response.status_code == 204
-        person = self.session.query(self.Person).get(1)
+        person = self.session.get(self.Person, 1)
         assert person.name == 'bar'
 
     def test_collection(self):
