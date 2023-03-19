@@ -101,7 +101,7 @@ class TestSimpleValidation(ManagerTestBase):
         self.Article = Article
         self.Comment = Comment
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Comment, methods=['PATCH'])
         self.manager.create_api(Person, methods=['POST', 'PATCH'],
@@ -272,7 +272,7 @@ class TestSAValidation(ManagerTestBase):
             sav.validates_email('email')
 
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         exceptions = [_sav.ValidationError]
         self.manager.create_api(Person, methods=['POST', 'PATCH'],
                                 validation_exceptions=exceptions)

@@ -46,7 +46,7 @@ class TestLocalAPIManager(SQLAlchemyTestBase):
 
         self.Person = Person
         self.Article = Article
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_missing_session(self):
         """Tests that setting neither a session nor a Flask-SQLAlchemy
@@ -269,7 +269,7 @@ class TestAPIManager(ManagerTestBase):
         self.Person = Person
         self.Tag = Tag
         self.Foo = Foo
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_url_for(self):
         """Tests the global :func:`flask_restless.url_for` function."""

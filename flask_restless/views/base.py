@@ -1102,7 +1102,7 @@ class FetchView(View):
                     try:
                         related_model = get_related_model(self.model, path)
                         pk = self.api_manager.primary_key_for(related_model)
-                        options = options.options(load_only(pk))
+                        options = options.options(load_only(getattr(related_model, pk)))
                     except KeyError:
                         # theoretically all models should be known to the API, and we should raise a Server Error if they are not,
                         # but to keep backward compatibility we let it pass

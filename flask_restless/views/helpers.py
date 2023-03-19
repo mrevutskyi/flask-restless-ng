@@ -10,12 +10,9 @@
 # License version 3 and under the 3-clause BSD license. For more
 # information, see LICENSE.AGPL and LICENSE.BSD.
 """Helper functions for view classes."""
-from sqlalchemy import __version__ as SQLALCHEMY_VERSION  # type: ignore
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 from sqlalchemy.sql import func
-
-SQLALCHEMY_14 = SQLALCHEMY_VERSION.startswith('1.4.')
 
 
 def upper_keys(dictionary):
@@ -67,7 +64,6 @@ def evaluate_functions(session, model, functions):
     if not model or not functions:
         return []
     processed = []
-    # funcnames = []
     for function in functions:
         if 'name' not in function:
             raise KeyError('Missing `name` key in function object')
@@ -113,10 +109,7 @@ def count(session, query):
     # There is no straightforward way to find if SQLAlchemy Statement class has limit set
     if ' LIMIT ' in str(query.statement):
         return query.order_by(None).count()
-    if SQLALCHEMY_14:
-        counts = query.selectable.with_only_columns(func.count(query.selectable.selected_columns[0]))
-    else:
-        counts = query.selectable.with_only_columns([func.count()])
+    counts = query.selectable.with_only_columns(func.count(query.selectable.selected_columns[0]))
     num_results = session.execute(counts.order_by(None)).scalar()
     if num_results is None:
         return query.order_by(None).count()

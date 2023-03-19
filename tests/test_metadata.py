@@ -32,7 +32,7 @@ class TestMetadata(ManagerTestBase):
             id = Column(Integer, primary_key=True)
 
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Person)
 
     def test_total(self):

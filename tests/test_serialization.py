@@ -108,7 +108,7 @@ class TestFetchResource(ManagerTestBase):
         self.Article = Article
         self.Comment = Comment
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_hybrid_property(self):
         """Tests for fetching a resource with a hybrid property attribute."""
@@ -431,7 +431,7 @@ class TestFetchRelation(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
 
@@ -511,7 +511,7 @@ class TestFetchRelatedResource(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_exception(self):
         """Tests that serialization exceptions are caught when fetching

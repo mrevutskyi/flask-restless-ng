@@ -53,7 +53,7 @@ class TestFetchRelation(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
 
@@ -145,7 +145,7 @@ class TestFetchRelatedResource(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
 
@@ -250,7 +250,7 @@ class TestFetchRelationship(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
 
@@ -317,7 +317,7 @@ class TestServerSparseFieldsets(ManagerTestBase):
         self.Comment = Comment
         self.Person = Person
         self.Photo = Photo
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_only_column(self):
         """Tests for specifying that responses should only include certain
@@ -514,7 +514,7 @@ class TestProcessors(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_single_resource_processing_exception(self):
         """Tests for a preprocessor that raises a :exc:`ProcessingException`
@@ -976,7 +976,7 @@ class TestDynamicRelationships(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
 
@@ -1074,7 +1074,7 @@ class TestAssociationProxy(ManagerTestBase):
 
         self.Article = Article
         self.Tag = Tag
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         # HACK Need to create APIs for these other models because otherwise
         # we're not able to create the link URLs to them.

@@ -29,8 +29,7 @@ class BaseTestClass:
 
     @classmethod
     def setup_class(cls):
-        cls.engine = create_engine('sqlite://')
-        cls.engine.execute("SELECT 1")
+        cls.engine = create_engine('sqlite://', future=True)
         cls.scoped_session_cls = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=cls.engine))
 
     def setup_method(self):

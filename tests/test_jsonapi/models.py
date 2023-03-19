@@ -11,10 +11,10 @@ from sqlalchemy import Time
 from sqlalchemy import Unicode
 from sqlalchemy import func
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import backref
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 
 from ..helpers import DeclarativeMeta
@@ -27,7 +27,7 @@ class Article(Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode)
     author_id = Column(Integer, ForeignKey('person.pk'))
-    comments = relationship('Comment', backref='article')
+    comments = relationship('Comment', backref='article', cascade_backrefs=False)
 
 
 class Comment(Base):
@@ -43,8 +43,8 @@ class Person(Base):
     name = Column(Unicode, unique=True)
     age = Column(Integer)
     other = Column(Float)
-    articles = relationship('Article', backref='author')
-    comments = relationship('Comment', backref='author')
+    articles = relationship('Article', backref='author', cascade_backrefs=False)
+    comments = relationship('Comment', backref='author', cascade_backrefs=False)
 
 
 class Tag(Base):
@@ -66,14 +66,14 @@ class PostTag(Base):
     # id = Column(Integer)
     post_id = Column(Integer, ForeignKey('post.id'), primary_key=True)
     tag_id = Column(Integer, ForeignKey('tag.id'), primary_key=True)
-    tag = relationship(Tag)
-    post = relationship(Post, backref=backref('posttags'))
+    tag = relationship(Tag, cascade_backrefs=False)
+    post = relationship(Post, backref=backref('posttags'), cascade_backrefs=False)
 
 
 class Parent(Base):
     __tablename__ = 'parent'
     id = Column(Integer, primary_key=True)
-    children = relationship('Child', primaryjoin='and_(Parent.id==Child.parent_id,Child.invisible==0)')
+    children = relationship('Child', primaryjoin='and_(Parent.id==Child.parent_id,Child.invisible==0)', cascade_backrefs=False)
 
 
 class Child(Base):

@@ -134,7 +134,7 @@ class TestFiltering(SearchTestBase):
         self.Article = Article
         self.Person = Person
         self.Comment = Comment
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person)
         # HACK Need to create APIs for these other models because otherwise
@@ -612,7 +612,7 @@ class TestOperators(SearchTestBase):
 
         self.Person = Person
         # self.Comment = Comment
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Person)
         # HACK Need to create APIs for these other models because otherwise
         # we're not able to create the link URLs to them.
@@ -824,7 +824,7 @@ class TestNetworkOperators(SearchTestBase):
             address = Column(INET)
 
         self.Network = Network
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Network)
 
     def tearDown(self):
@@ -1015,7 +1015,7 @@ class TestAssociationProxy(SearchTestBase):
 
         self.Article = Article
         self.Tag = Tag
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         # HACK Need to create APIs for these other models because otherwise
         # we're not able to create the link URLs to them.
@@ -1070,7 +1070,7 @@ class TestTSVectorOperators(SearchTestBase):
         self.Product = Product
         # This try/except skips the tests if we are unable to create the
         # tables in the PostgreSQL database.
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Product)
 
         # Create common records

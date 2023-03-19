@@ -7,9 +7,9 @@ the JSON API specification.
 
 """
 import pytest
+from sqlalchemy import text
 
 from flask_restless import APIManager
-from sqlalchemy import text
 
 from ..conftest import BaseTestClass
 from .models import Article

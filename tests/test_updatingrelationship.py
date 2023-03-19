@@ -48,7 +48,7 @@ class TestAdding(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article)
         self.manager.create_api(Person, methods=['PATCH'])
 
@@ -313,7 +313,7 @@ class TestDeleting(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Person, methods=['PATCH'],
                                 allow_delete_from_to_many_relationships=True)
         self.manager.create_api(Article)
@@ -563,7 +563,7 @@ class TestUpdatingToMany(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Person, methods=['PATCH'],
                                 allow_to_many_replacement=True)
         self.manager.create_api(Article)
@@ -852,7 +852,7 @@ class TestUpdatingToOne(ManagerTestBase):
 
         self.Article = Article
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article, methods=['PATCH'])
         self.manager.create_api(Person)
 

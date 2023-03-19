@@ -15,7 +15,7 @@ This is a fork of [Flask-Restless](https://github.com/jfinkels/flask-restless) m
 Version `1.0.*` of `Flask-Restless-NG` is fully API compatible with `Flask-Restless` version `1.0.0b1`
 with the following improvements:
 
-  * Supports Flask 1.0+ and SQLAlchemy 1.3-1.4 (2.x is not supported yet)
+  * Supports Flask 2.2+ and SQLAlchemy 1.4.x-2.0.x
   * 2-5x faster serialization of JSON responses.
   * Miscellaneous bugs fixed
 

@@ -106,7 +106,7 @@ class TestUpdating(ManagerTestBase):
         self.Article = Article
         self.Interval = Interval
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article, methods=['PATCH'])
         self.manager.create_api(Interval, methods=['PATCH'])
         self.manager.create_api(Person, methods=['PATCH'])
@@ -689,7 +689,7 @@ class TestProcessors(ManagerTestBase):
             name = Column(Unicode)
 
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
 
     def test_change_id(self):
         """Tests that a return value from a preprocessor overrides the ID of
@@ -886,7 +886,7 @@ class TestAssociationProxy(ManagerTestBase):
         self.Article = Article
         self.ArticleTag = ArticleTag
         self.Tag = Tag
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Article, methods=['PATCH'])
         # HACK Need to create APIs for these other models because otherwise
         # we're not able to create the link URLs to them.
@@ -948,7 +948,8 @@ class TestFlaskSQLAlchemy(FlaskSQLAlchemyTestBase):
         # session).
         session_options = dict(expire_on_commit=False)
         # Overwrite the `db` and `session` attributes from the superclass.
-        self.db = SQLAlchemy(self.flaskapp, session_options=session_options)
+        if "sqlalchemy" not in self.flaskapp.extensions:
+            self.db = SQLAlchemy(self.flaskapp, session_options=session_options)
         self.session = self.db.session
 
         class Person(self.db.Model):

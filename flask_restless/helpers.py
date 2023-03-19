@@ -26,7 +26,6 @@ from sqlalchemy import Date
 from sqlalchemy import DateTime
 from sqlalchemy import Interval
 from sqlalchemy import Time
-from sqlalchemy.ext.hybrid import HYBRID_PROPERTY
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.inspection import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import ColumnProperty
@@ -79,6 +78,7 @@ def session_query(session, model):
     return session.query(model)
 
 
+@lru_cache()
 def get_relations(model):
     """Returns a list of relation names of `model` (as a list of strings)."""
     return [k for k in dir(model)
@@ -186,7 +186,7 @@ def attribute_columns(model) -> List[str]:
     inspected_model = sqlalchemy_inspect(model)
     column_attrs = inspected_model.column_attrs.keys()
     descriptors = inspected_model.all_orm_descriptors.items()
-    hybrid_columns = [k for k, d in descriptors if d.extension_type == HYBRID_PROPERTY]
+    hybrid_columns = [k for k, d in descriptors if d.extension_type == hybrid_property.extension_type]
 
     return column_attrs + hybrid_columns
 

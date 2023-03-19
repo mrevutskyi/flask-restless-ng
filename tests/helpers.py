@@ -25,7 +25,7 @@ from flask import Flask
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session as SessionBase
@@ -316,17 +316,17 @@ class SQLAlchemyTestBase(FlaskTestBase, DatabaseMixin):
 
         """
         super().setUp()
-        engine = create_engine(self.database_uri())
+        self.engine = create_engine(self.database_uri())
         self.Session = sessionmaker(autocommit=False, autoflush=False,
-                                    bind=engine)
+                                    bind=self.engine)
         self.session = scoped_session(self.Session)
         self.Base = declarative_base()
-        self.Base.metadata.bind = engine
+        self.Base.metadata.bind = self.engine
 
     def tearDown(self):
         """Drops all tables from the temporary database."""
         self.session.remove()
-        self.Base.metadata.drop_all()
+        self.Base.metadata.drop_all(self.engine)
 
 
 class ManagerTestBase(SQLAlchemyTestBase):
@@ -352,6 +352,3 @@ class ManagerTestBase(SQLAlchemyTestBase):
         """
         super().setUp()
         self.manager = APIManager(self.flaskapp, session=self.session)
-
-    def tearDown(self):
-        super().tearDown()

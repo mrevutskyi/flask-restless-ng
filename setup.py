@@ -38,8 +38,8 @@ VERSION_RE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 #: The installation requirements Flask-SQLAlchemy is not
 #: required, so the user must install it explicitly.
 REQUIREMENTS = [
-    'flask>=1.0',
-    'sqlalchemy>=1.4.0,<2.0',
+    'flask>=2.2,<2.3',
+    'sqlalchemy>=1.4.18,<2.1',
     'python-dateutil>2.2',
 ]
 

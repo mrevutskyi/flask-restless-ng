@@ -35,7 +35,7 @@ class TestFunctionEvaluation(ManagerTestBase):
             age = Column(Integer)
 
         self.Person = Person
-        self.Base.metadata.create_all()
+        self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Person, allow_functions=True)
 
     def test_multiple_functions(self):
