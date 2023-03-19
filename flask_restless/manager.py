@@ -15,7 +15,6 @@ The :class:`APIManager` class allow users to create ReSTful APIs for
 their SQLAlchemy models.
 
 """
-import warnings
 from collections import defaultdict
 from typing import Dict
 from typing import Optional
@@ -34,7 +33,6 @@ from .views import API
 from .views import RelationshipAPI
 from .views.base import FetchCollection
 from .views.base import FetchResource
-from .views.function import FunctionAPI
 
 #: The names of HTTP methods that allow fetching information.
 READONLY_METHODS = frozenset(('GET', ))
@@ -311,7 +309,6 @@ class APIManager:
             allow_to_many_replacement: bool = False,
             allow_delete_from_to_many_relationships: bool = False,
             allow_client_generated_ids: bool = False,
-            allow_functions: bool = False
     ):
         """Creates and returns a ReSTful API interface as a blueprint, but does
         not register it on any :class:`flask.Flask` application.
@@ -677,14 +674,6 @@ class APIManager:
         to_many_resource_methods = READONLY_METHODS & methods
         add_rule(to_many_resource_url, view_func=api_view,
                  methods=to_many_resource_methods)
-
-        # if function evaluation is allowed, add an endpoint at /api/eval/...
-        # which responds only to GET requests and responds with the result of
-        # evaluating functions on all instances of the specified model
-        if allow_functions:
-            warnings.warn('`allow_functions` is deprecated and will be removed in the next major release', DeprecationWarning)
-            eval_api_view = FunctionAPI.as_view(f'{api_name}_eval', session, model)
-            blueprint.add_url_rule(f'/eval{collection_url}', methods=['GET'], view_func=eval_api_view)
 
         # Finally, record that this APIManager instance has created an API for
         # the specified model.

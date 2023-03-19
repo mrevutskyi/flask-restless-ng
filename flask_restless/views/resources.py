@@ -23,7 +23,6 @@ from werkzeug.exceptions import BadRequest
 
 from ..helpers import get_by
 from ..helpers import get_related_model
-from ..helpers import get_relations
 from ..helpers import has_field
 from ..helpers import is_like_list
 from ..helpers import strings_to_datetimes
