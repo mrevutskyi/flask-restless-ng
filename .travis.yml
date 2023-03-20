@@ -5,7 +5,6 @@ python:
   - "3.7"
   - "3.8"
   - "3.9"
-  - "pypy3.7"
 
 addons:
   # HACK Need to update the installed version of PostgreSQL, because it doesn't
