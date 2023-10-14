@@ -18,6 +18,7 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 from functools import wraps
+from importlib import metadata
 from json import JSONEncoder
 
 import jsonschema
@@ -99,7 +100,7 @@ def unregister_fsa_session_signals():
         return
     # We don't need to do this if Flask-SQLAlchemy version 2.0 or
     # greater is installed.
-    version = parse_version(flask_sqlalchemy.__version__)
+    version = parse_version(metadata.version("flask-sqlalchemy"))
     if version >= (2, 0):
         return
     events = flask_sqlalchemy._SessionSignalEvents

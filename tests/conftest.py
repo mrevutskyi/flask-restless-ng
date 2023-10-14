@@ -4,7 +4,7 @@ from typing import Dict
 from typing import Optional
 
 from flask import Flask
-from flask.testing import FlaskClient
+# from flask.testing import FlaskClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker

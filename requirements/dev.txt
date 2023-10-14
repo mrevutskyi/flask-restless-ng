@@ -6,3 +6,4 @@ python-dateutil>2.2
 setuptools>=65.5.1
 
 Werkzeug>=2.2
+MarkupSafe>=2.0

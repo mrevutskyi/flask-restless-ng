@@ -24,6 +24,7 @@ from functools import partial
 from functools import wraps
 from http import HTTPStatus
 from itertools import chain
+from typing import Optional
 from typing import Set
 from typing import Tuple
 from urllib.parse import urlparse
@@ -1025,7 +1026,7 @@ class FetchView(View):
         except MultipleExceptions as e:
             return errors_from_serialization_exceptions(e.exceptions)
 
-    def get_data(self, *args, include: Set[str] = None, **kwargs) -> ResponseTuple:
+    def get_data(self, *args, include: Optional[Set[str]] = None, **kwargs) -> ResponseTuple:
         raise NotImplementedError
 
     def _serialize_instances(self, instances):

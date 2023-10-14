@@ -16,9 +16,9 @@ The main class in this module, :class:`RelationshipAPI`, is a
 relationships according to the JSON API specification.
 
 """
-from flask import escape
 from flask import json
 from flask import request
+from markupsafe import escape
 from werkzeug.exceptions import BadRequest
 
 from ..helpers import get_by

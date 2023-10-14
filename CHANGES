@@ -4,12 +4,21 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
+Version 3.1.0 (2023-10-14):
+-------------
+- Added support for Flask 3.0
+- Added support for Python 3.11
+- Added support for Python 3.12
+- Dropped support for Python 3.7
+
+
 Version 3.0.0 (2023-03-19):
 -------------
 - Added support for SQLAlchemy 2.0
 - Minimum required SQLAlchemy version: 1.4.18
 - Minimum required Flask version: 2.2
 - Drop Functions API support
+
 
 Version 2.5.1 (2023-03-15):
 -------------

@@ -38,9 +38,10 @@ VERSION_RE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 #: The installation requirements Flask-SQLAlchemy is not
 #: required, so the user must install it explicitly.
 REQUIREMENTS = [
-    'flask>=2.2,<2.3',
+    'flask>=2.2,<3.1',
     'sqlalchemy>=1.4.18,<2.1',
     'python-dateutil>2.2',
+    'MarkupSafe>=2.0',
 ]
 
 #: The absolute path to this file.
@@ -79,10 +80,11 @@ setup(
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Database :: Front-Ends',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Python Modules'
@@ -96,7 +98,7 @@ setup(
     long_description=__doc__,
     name='Flask-Restless-NG',
     platforms='any',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     packages=['flask_restless', 'flask_restless.views'],
     test_suite='tests',
     tests_require=[],
