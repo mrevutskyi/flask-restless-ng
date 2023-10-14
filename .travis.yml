@@ -1,10 +1,13 @@
 # Use Travis's container-based infrastructure.
+dist: jammy
+
 language: python
 
 python:
   - "3.8"
   - "3.9"
   - "3.10"
+  - "3.11"
 
 addons:
   # HACK Need to update the installed version of PostgreSQL, because it doesn't
