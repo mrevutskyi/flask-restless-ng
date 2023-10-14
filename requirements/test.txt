@@ -1,6 +1,5 @@
 -r dev.txt
 jsonschema
-savalidation
 
 PyMySQL # required after Flask_SQLAlchemy 3.0
 

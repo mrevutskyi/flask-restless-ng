@@ -594,25 +594,6 @@ def extract_error_messages(exception):
     # 'errors' comes from sqlalchemy_elixir_validations
     if hasattr(exception, 'errors'):
         return exception.errors
-    # 'message' comes from savalidation
-    if hasattr(exception, 'message'):
-        # TODO this works only if there is one validation error
-        try:
-            left, right = str(exception).rsplit(':', 1)
-            left_bracket = left.rindex('[')
-            right_bracket = right.rindex(']')
-        except ValueError as exc:
-            current_app.logger.exception(str(exc))
-            # could not parse the string; we're not trying too hard here...
-            return None
-        msg = right[:right_bracket].strip(' "')
-        fieldname = left[left_bracket + 1:].strip()
-        return {fieldname: msg}
-    # new savalidation
-    if hasattr(exception, 'invalid_instances'):
-        # TODO handle more than once instance
-        return exception.invalid_instances[0].validation_errors
-
 
 def error(id_=None, links=None, status=None, code=None, title=None,
           detail=None, source=None, meta=None):
