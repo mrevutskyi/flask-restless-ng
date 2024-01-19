@@ -18,7 +18,6 @@ to test that it captures validation errors and returns them to the
 client.
 
 """
-import unittest
 
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey

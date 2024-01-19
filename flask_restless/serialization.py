@@ -330,7 +330,13 @@ class Deserializer(ABC):
 class DefaultSerializer(Serializer):
     """Default Serializer implementation."""
 
-    def __init__(self, model, type_name, api_manager, primary_key=None, only=None, exclude=None, additional_attributes=None, **kwargs):
+    def __init__(self, model, type_name, api_manager,
+                 primary_key=None,
+                 only=None,
+                 exclude=None,
+                 additional_attributes=None,
+                 allow_non_primary_key_id=False,
+                 **kwargs):
         super().__init__(**kwargs)
         if only is not None and exclude is not None:
             raise ValueError('Cannot specify both `only` and `exclude` keyword arguments simultaneously')
@@ -343,7 +349,7 @@ class DefaultSerializer(Serializer):
         self._type = type_name
         pk_names = primary_key_names(model)
         if primary_key:
-            if primary_key not in pk_names:
+            if not allow_non_primary_key_id and primary_key not in pk_names:
                 raise ValueError(f'Column `{primary_key}` is not a primary key')
         else:
             raise ValueError('`primary_key` is required')

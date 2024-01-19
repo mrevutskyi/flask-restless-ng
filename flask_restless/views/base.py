@@ -595,6 +595,7 @@ def extract_error_messages(exception):
     if hasattr(exception, 'errors'):
         return exception.errors
 
+
 def error(id_=None, links=None, status=None, code=None, title=None,
           detail=None, source=None, meta=None):
     """Returns a dictionary representation of an error as described in the

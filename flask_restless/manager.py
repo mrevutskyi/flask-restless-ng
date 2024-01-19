@@ -309,6 +309,7 @@ class APIManager:
             allow_to_many_replacement: bool = False,
             allow_delete_from_to_many_relationships: bool = False,
             allow_client_generated_ids: bool = False,
+            allow_non_primary_key_id: bool = False,
     ):
         """Creates and returns a ReSTful API interface as a blueprint, but does
         not register it on any :class:`flask.Flask` application.
@@ -547,7 +548,8 @@ class APIManager:
         # provided.
         if serializer is None:
             serializer = DefaultSerializer(model, collection_name, self, primary_key=primary_key,
-                                           only=only, exclude=exclude, additional_attributes=additional_attributes)
+                                           only=only, exclude=exclude, additional_attributes=additional_attributes,
+                                           allow_non_primary_key_id=allow_non_primary_key_id)
 
         session = self.session
         if deserializer is None:

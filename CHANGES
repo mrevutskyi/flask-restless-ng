@@ -4,9 +4,10 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
-Unreleased
+Version 3.2.0
 -------------
 - Dropped savalidation support
+- Added a parameter to serializer to skip primary key check (not recommended)
 
 
 Version 3.1.0 (2023-10-14):

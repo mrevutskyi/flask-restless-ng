@@ -2,6 +2,7 @@ import datetime
 import enum
 import json
 
+import pytest
 from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Date
@@ -86,3 +87,17 @@ def test_serialize_attributes():
         'interval_field': 60.0,
         'enum_field': 'two'
     }
+
+
+def test_raises_value_error_for_empty_pk():
+    with pytest.raises(ValueError):
+        DefaultSerializer(Model, 'test-model', None)
+
+
+def test_raises_value_error_when_provided_pk_is_not_pk():
+    with pytest.raises(ValueError):
+        DefaultSerializer(Model, 'test-model', None, primary_key='date_field')
+
+
+def test_skip_pk_test():
+    assert DefaultSerializer(Model, 'test-model', None, primary_key='date_field', allow_non_primary_key_id=True)
