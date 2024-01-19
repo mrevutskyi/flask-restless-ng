@@ -37,6 +37,11 @@ class MyEnum(enum.Enum):
     three = 3
 
 
+class MyEnumStr(str, enum.Enum):
+    one = "One"
+    two = "Two"
+
+
 class Model(Base):
     __tablename__ = 'article'
     id = Column(Integer, primary_key=True)
@@ -51,6 +56,7 @@ class Model(Base):
     interval_field = Column(Interval())
     time_field = Column(Time())
     enum_field = Column(Enum(MyEnum))
+    enum_str_field = Column(Enum(MyEnumStr))
 
 
 def test_serialize_attributes():
@@ -67,7 +73,8 @@ def test_serialize_attributes():
         datetime_field=datetime.datetime(year=2021, month=1, day=1, hour=12, minute=0, second=0),
         time_field=datetime.time(12, 0, 0),
         interval_field=datetime.timedelta(minutes=1),
-        enum_field=MyEnum.two
+        enum_field=MyEnum.two,
+        enum_str_field=MyEnumStr.one
     )
 
     serialized = serializer.serialize_attributes(instance)
@@ -85,7 +92,8 @@ def test_serialize_attributes():
         'datetime_field': '2021-01-01T12:00:00',
         'time_field': '12:00:00',
         'interval_field': 60.0,
-        'enum_field': 'two'
+        'enum_field': 'two',
+        'enum_str_field': 'One',
     }
 
 

@@ -431,7 +431,7 @@ class DefaultSerializer(Serializer):
             elif isinstance(value, timedelta):
                 attributes[key] = value.total_seconds()
             # Enums are not serializable by default, use 'name' property
-            elif isinstance(value, enum.Enum):
+            elif isinstance(value, enum.Enum) and not isinstance(value, str):
                 attributes[key] = value.name
 
         return attributes
