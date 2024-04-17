@@ -24,6 +24,7 @@ from sqlalchemy import String
 from sqlalchemy import Time
 from sqlalchemy import Unicode
 from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -1068,8 +1069,6 @@ class TestTSVectorOperators(SearchTestBase):
             document = Column(TSVECTOR)
 
         self.Product = Product
-        # This try/except skips the tests if we are unable to create the
-        # tables in the PostgreSQL database.
         self.Base.metadata.create_all(bind=self.engine)
         self.manager.create_api(Product)
 
@@ -1122,6 +1121,86 @@ class TestTSVectorOperators(SearchTestBase):
         # Search without the &.
         filters = [
             dict(name='document', op='plainto_tsquery', val='911 Porsche')]
+        response = self.search('/api/product', filters)
+        document = response.json
+        products = document['data']
+        assert [self.product1.id] == [int(product['id']) for product in products]
+
+
+class TestArrayOperators(SearchTestBase):
+    """Unit tests for the array operators in PostgreSQL.
+
+    For more information, see `Array Functions and Operators`_
+    in the PostgreSQL documentation.
+
+    .. _Array Functions and Operators:
+       https://www.postgresql.org/docs/current/functions-array.html
+
+    """
+
+    def setUp(self):
+        super(TestArrayOperators, self).setUp()
+
+        class Product(self.Base):
+            __tablename__ = 'product'
+            id = Column(Integer, primary_key=True)
+            name = Column(String)
+            tags = Column(ARRAY(String))
+
+        self.Product = Product
+        self.Base.metadata.create_all(bind=self.engine)
+        self.manager.create_api(Product)
+
+        # Create common records
+        self.product1 = self.Product(
+            id=1, name='Porsche 911', tags=['car', 'sport'])
+        self.product2 = self.Product(
+            id=2, name='Porsche 918', tags=['car', 'hybrid'])
+        self.session.add_all([self.product1, self.product2])
+        self.session.commit()
+
+
+    def tearDown(self):
+        """Closes the database and removes the temporary directory in
+        which it lives.
+
+        """
+        super(TestArrayOperators, self).tearDown()
+        self.database.stop()
+
+    # We know this method will be called by `setUp()` in the superclass,
+    # so we can set up the temporary database here.
+    def database_uri(self):
+        """Creates a PostgreSQL database and returns its connection URI."""
+        #: The PostgreSQL database used by the test methods in this class.
+        #:
+        #: This attribute stores a
+        #: :class:`~testing.postgresql.Postgresql` object, which must be
+        #: stopped in the :meth:`.tearDown` method.
+        self.database = PostgreSQL()
+
+        return self.database.url()
+
+    def test_contains(self):
+        """Test for the ``@>`` ("contains") operator.
+        For example:
+        .. sourcecode:: postgresql
+            tags @> ARRAY['car']
+        """
+        filters = [dict(name='tags', op='@>', val=['car'])]
+        response = self.search('/api/product', filters)
+        document = response.json
+        products = document['data']
+        assert [self.product1.id, self.product2.id] == sorted(
+            int(product['id']) for product in products)
+
+    def test_contained_by(self):
+        """Test for the ``<@`` ("contained by") operator.
+        For example:
+        .. sourcecode:: postgresql
+            tags <@ ARRAY['car', 'sport']
+        """
+        filters = [dict(name='tags', op='<@', val=['car', 'sport'])]
         response = self.search('/api/product', filters)
         document = response.json
         products = document['data']

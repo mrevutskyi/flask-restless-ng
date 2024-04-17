@@ -798,8 +798,11 @@ appropriate `SQLAlchemy column operators`_.
 * ``has``
 * ``any``
 
-Flask-Restless also understands the `PostgreSQL network address operators`_
-``<<``, ``<<=``, ``>>``, ``>>=``, ``<>``, and ``&&``.
+Flask-Restless also understands:
+
+* `PostgreSQL network address operators`_ ``<<``, ``<<=``, ``>>``, ``>>=``, ``<>``, and ``&&``.
+* `PostgreSQL tsquery operators`_ ``to_tsquery`` and ``plainto_tsquery``.
+* `PostgreSQL array operators`_ ``<@`` and ``@>``.
 
 .. warning::
 
