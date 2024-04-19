@@ -4,7 +4,12 @@ Changelog
 Changes in Flask-Restless-NG
 ============================
 
-Version 3.2.0 (2024-01-19)
+Version 3.2.3 (2024-04-19)
+-------------
+- Added @> and <@ PostgreSQL operators (#46 by @ajite)
+
+
+Version 3.2.2 (2024-01-19)
 -------------
 - If Enum column is also subclass of `str` use default JSON serialization
 

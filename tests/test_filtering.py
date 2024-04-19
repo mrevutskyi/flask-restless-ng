@@ -1159,7 +1159,6 @@ class TestArrayOperators(SearchTestBase):
         self.session.add_all([self.product1, self.product2])
         self.session.commit()
 
-
     def tearDown(self):
         """Closes the database and removes the temporary directory in
         which it lives.
