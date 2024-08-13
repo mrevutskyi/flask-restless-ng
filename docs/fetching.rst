@@ -802,7 +802,7 @@ Flask-Restless also understands:
 
 * `PostgreSQL network address operators`_ ``<<``, ``<<=``, ``>>``, ``>>=``, ``<>``, and ``&&``.
 * `PostgreSQL tsquery operators`_ ``to_tsquery`` and ``plainto_tsquery``.
-* `PostgreSQL array operators`_ ``<@`` and ``@>``.
+* `PostgreSQL array operators`_ ``<@`` and ``@>``. They can also be used in their negated forms, ``!@>`` and ``!<@``.
 
 .. warning::
 
