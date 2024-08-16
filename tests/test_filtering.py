@@ -1204,3 +1204,33 @@ class TestArrayOperators(SearchTestBase):
         document = response.json
         products = document['data']
         assert [self.product1.id] == [int(product['id']) for product in products]
+
+    def test_not_contains(self):
+        """Test for the ``!@>`` ("does not contain") operator.
+
+        For example:
+
+        .. sourcecode:: postgresql
+
+            not tags @> ARRAY['car']
+        """
+        filters = [dict(name='tags', op='!@>', val=['hybrid'])]
+        response = self.search('/api/product', filters)
+        document = response.json
+        products = document['data']
+        assert [self.product1.id] == [int(product['id']) for product in products]
+
+    def test_not_contained_by(self):
+        """Test for the ``!<@`` ("is not contained by") operator.
+
+        For example:
+
+        .. sourcecode:: postgresql
+
+            not tags <@ ARRAY['car', 'sport']
+        """
+        filters = [dict(name='tags', op='!<@', val=['car', 'sport'])]
+        response = self.search('/api/product', filters)
+        document = response.json
+        products = document['data']
+        assert [self.product2.id] == [int(product['id']) for product in products]

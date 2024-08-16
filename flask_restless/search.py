@@ -136,10 +136,12 @@ OPERATORS = {
     'not_like': lambda f, a: ~f.like(a),
     'in': lambda f, a: f.in_(a),
     'not_in': lambda f, a: ~f.in_(a),
-    'to_tsquery': lambda f, a: f.match(a),
+    'to_tsquery': lambda f, a: f.op('@@')(func.to_tsquery(a)),
     'plainto_tsquery': lambda f, a: f.op('@@')(func.plainto_tsquery(a)),
     '@>': lambda f, a, fn: f.op('@>')(a),
     '<@': lambda f, a, fn: f.op('<@')(a),
+    '!@>': lambda f, a, fn: ~f.op('@>')(a),
+    '!<@': lambda f, a, fn: ~f.op('<@')(a),
     # Operators which accept three arguments.
     'has': lambda f, a, fn: f.has(_sub_operator(f, a, fn)),
     'any': lambda f, a, fn: f.any(_sub_operator(f, a, fn)),
