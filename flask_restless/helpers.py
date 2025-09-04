@@ -235,7 +235,7 @@ def query_by_primary_key(session, model, pk_value, primary_key=None):
     If `primary_key` is specified, the column specified by that string is used
     as the primary key column. Otherwise, the column named ``id`` is used.
 
-    Convert the pk_value to INT if primary_key type is integer.
+    Convert the pk_value to int if primary_key type is Integer.
 
     Presumably, the returned query should have at most one element.
 
