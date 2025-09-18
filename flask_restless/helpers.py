@@ -24,6 +24,7 @@ from typing import Set
 from dateutil.parser import parse as parse_datetime
 from sqlalchemy import Date
 from sqlalchemy import DateTime
+from sqlalchemy import Integer
 from sqlalchemy import Interval
 from sqlalchemy import Time
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -234,10 +235,20 @@ def query_by_primary_key(session, model, pk_value, primary_key=None):
     If `primary_key` is specified, the column specified by that string is used
     as the primary key column. Otherwise, the column named ``id`` is used.
 
+    Convert the pk_value to int if primary_key type is Integer.
+
     Presumably, the returned query should have at most one element.
 
     """
-    pk_name = primary_key
+    pk_name = primary_key if primary_key else 'id'
+    pk_type = get_field_type(model, pk_name)
+
+    if isinstance(pk_type, Integer):
+        try:
+            pk_value = int(pk_value)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Cannot convert pk_value '{pk_value}' to type {pk_type}") from e
+
     query = session_query(session, model)
     return query.filter(getattr(model, pk_name) == pk_value)
 
