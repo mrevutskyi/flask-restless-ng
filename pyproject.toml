@@ -58,6 +58,7 @@ dev = [
     "isort>=5.0",
     "mypy>=0.990",
     "tox>=4.0",
+    "build>=1.0",
 ]
 doc = [
     "Sphinx>=5.0",
