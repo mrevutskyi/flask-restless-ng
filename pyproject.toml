@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A fork of Flask-Restless with updated dependencies and bug fixes"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "GNU AGPLv3+ or BSD"}
+license-files = ["LICENSE.AGPL", "LICENSE.BSD"]
 authors = [
     {name = "Jeffrey Finkelstein", email = "jeffrey.finkelstein@gmail.com"},
     {name = "Maksym Revutskyi", email = "maksym.revutskyi@gmail.com"}
