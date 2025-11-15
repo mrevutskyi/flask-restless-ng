@@ -247,7 +247,7 @@ def query_by_primary_key(session, model, pk_value, primary_key=None):
         try:
             pk_value = int(pk_value)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Cannot convert pk_value '{pk_value}' to type {pk_type}") from e
+            pass
 
     query = session_query(session, model)
     return query.filter(getattr(model, pk_name) == pk_value)
