@@ -48,9 +48,34 @@ For more information, see the
 
 ## Installing
 
-This application can be used with any Python version 3.6+
+This application can be used with any Python version 3.8+
 
     pip install Flask-Restless-NG
+
+## Development Setup
+
+For development, it's recommended to use a virtual environment:
+
+```bash
+# Clone the repository
+git clone https://github.com/mrevutskyi/flask-restless-ng.git
+cd flask-restless-ng
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in editable mode with dev dependencies
+pip install -e ".[dev,test,doc]"
+
+# Run tests
+pytest tests/
+
+# Run code quality checks
+make check
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development instructions.
 
 ## Example ##
 

@@ -1,0 +1,151 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Flask-Restless-NG"
+dynamic = ["version"]
+description = "A fork of Flask-Restless with updated dependencies and bug fixes"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GNU AGPLv3+ or BSD"}
+authors = [
+    {name = "Jeffrey Finkelstein", email = "jeffrey.finkelstein@gmail.com"},
+    {name = "Maksym Revutskyi", email = "maksym.revutskyi@gmail.com"}
+]
+maintainers = [
+    {name = "Maksym Revutskyi", email = "maksym.revutskyi@gmail.com"}
+]
+keywords = ["ReST", "API", "Flask", "SQLAlchemy", "JSON API"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database :: Front-Ends",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "flask>=2.2,<3.1",
+    "sqlalchemy>=1.4.18,<2.1",
+    "python-dateutil>2.2",
+    "MarkupSafe>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mrevutskyi/flask-restless-ng"
+Documentation = "https://flask-restless-ng.readthedocs.org"
+Repository = "https://github.com/mrevutskyi/flask-restless-ng"
+Download = "https://pypi.python.org/pypi/Flask-Restless-NG"
+"Bug Tracker" = "https://github.com/mrevutskyi/flask-restless-ng/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=3.0",
+    "flake8>=5.0",
+    "isort>=5.0",
+    "mypy>=0.990",
+    "tox>=4.0",
+]
+doc = [
+    "Sphinx>=5.0",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=3.0",
+    "jsonschema>=4.0",
+    "flask-sqlalchemy>=3.0",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["flask_restless*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "flask_restless.__version__"}
+
+[tool.setuptools.package-data]
+flask_restless = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
+filterwarnings = [
+    "ignore:.*`allow_functions` is deprecated.*:DeprecationWarning",
+    "ignore:.*Importing 'itsdangerous.json' is deprecated and will .*:DeprecationWarning",
+    "ignore:.*'jinja2.escape' is deprecated and will.*:DeprecationWarning",
+]
+
+[tool.isort]
+line_length = 160
+indent = 4
+force_single_line = true
+known_first_party = ["flask_restless"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+profile = "black"
+skip_gitignore = true
+
+[tool.flake8]
+max-line-length = 160
+ignore = ["E124", "E127", "W503", "W504"]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".tox",
+    ".eggs",
+    "*.egg",
+    "build",
+    "dist",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+exclude = [
+    "^build/",
+    "^dist/",
+    "^.tox/",
+]
+
+[[tool.mypy.overrides]]
+module = "flask_restless.*"
+ignore_missing_imports = false
+
+[tool.coverage.run]
+source = ["flask_restless"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

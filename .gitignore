@@ -16,7 +16,8 @@ cover
 
 # virtualenv environments
 env*/
-/venv/
+venv/
+.venv/
 .tox
 
 # build artifacts from python setup.py build or python setup.py install

@@ -18,9 +18,14 @@ integration:
 check: isort flake8 mypy tox integration
 
 package:
-	python3 setup.py sdist bdist_wheel
+	python3 -m build
 
 tox:
 	tox
+
+clean:
+	rm -rf build dist *.egg-info
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type f -name '*.pyc' -delete
 
 release: check package

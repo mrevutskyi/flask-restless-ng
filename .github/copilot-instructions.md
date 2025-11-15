@@ -62,8 +62,39 @@ APIManager (manager.py)
 
 ## Development Workflows
 
+### Virtual Environment Setup
+This project uses Python's `venv` for isolated dependency management:
+```bash
+# Quick setup (recommended)
+./setup-dev.sh
+
+# Manual setup
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -e ".[dev,test,doc]"
+```
+
+**Always activate the virtual environment before development:**
+```bash
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+```
+
+### Build System
+The project uses modern PEP 517/518 build standards with `pyproject.toml`:
+```bash
+# Build package (creates source dist and wheel)
+make package  # or: python -m build
+
+# Clean build artifacts
+make clean
+```
+
 ### Running Tests
 ```bash
+# Ensure venv is activated first
+source venv/bin/activate
+
 # Run all tests (excludes integration by default)
 make test  # or: pytest tests/
 
@@ -76,6 +107,9 @@ make tox  # or: tox
 
 ### Code Quality
 ```bash
+# Ensure venv is activated first
+source venv/bin/activate
+
 make check  # Runs: isort, flake8, mypy, tox, integration
 
 # Individual checks:
@@ -83,6 +117,8 @@ make isort   # Import sorting (line_length=160, force_single_line=True)
 make flake8  # Linting (max-line-length=160, ignore E124,E127,W503,W504)
 make mypy    # Type checking with SQLAlchemy plugin
 ```
+
+All tool configurations (pytest, isort, flake8, mypy, coverage) are now in `pyproject.toml`.
 
 ### Test Structure
 - Base class: `tests/conftest.py::BaseTestClass` sets up SQLite engine, scoped sessions
