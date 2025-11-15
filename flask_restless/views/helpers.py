@@ -48,4 +48,7 @@ def changes_on_update(model):
     the :attr:`sqlalchemy.Column.onupdate` attribute set.
 
     """
-    return any(column.onupdate is not None for column in sqlalchemy_inspect(model).columns)
+    for column in sqlalchemy_inspect(model).columns:
+        if hasattr(column, 'onupdate') and column.onupdate is not None:
+            return True
+    return False
