@@ -77,6 +77,30 @@ pytest --cov=flask_restless tests/
 make integration
 ```
 
+### Integration Tests with Docker
+
+Integration tests require a MariaDB database. The easiest way to run them is using Docker Compose:
+
+**Note:** If you get permission errors, you may need to add your user to the docker group or use sudo. See [DOCKER.md](DOCKER.md#permission-denied-error) for details.
+
+```bash
+# Automatically start MariaDB, run tests, and cleanup
+make integration
+
+# Or manually control the database
+make docker-up          # Start MariaDB
+pytest -m integration   # Run integration tests
+make docker-down        # Stop MariaDB
+
+# View logs if needed
+make docker-logs
+
+# Check container status
+make docker-ps
+```
+
+See [DOCKER.md](DOCKER.md) for detailed Docker setup and troubleshooting information.
+
 ## Code Quality
 
 ```bash

@@ -1,4 +1,4 @@
-.PHONY: help install install-dev install-test test integration check flake8 isort mypy tox package clean release setup
+.PHONY: help install install-dev install-test test integration check flake8 isort mypy tox package clean release setup docker-up docker-down docker-logs docker-ps
 
 help:
 	@echo "Flask-Restless-NG Development Commands"
@@ -12,7 +12,13 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test        - Run all tests (excludes integration)"
-	@echo "  make integration - Run integration tests (requires Docker)"
+	@echo "  make integration - Run integration tests (starts/stops Docker automatically)"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-up   - Start MariaDB container"
+	@echo "  make docker-down - Stop and remove MariaDB container"
+	@echo "  make docker-logs - Show MariaDB container logs"
+	@echo "  make docker-ps   - Show running containers"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make flake8      - Run flake8 linter"
@@ -40,9 +46,26 @@ test:
 	pytest tests/
 
 integration:
-	docker start mariadb_10_5
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose up -d mariadb_10_5 || sudo docker-compose up -d mariadb_10_5
+	@echo "Waiting for MariaDB to be ready..."
+	@sleep 10
 	pytest -m integration
-	docker stop mariadb_10_5
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose down || sudo docker-compose down
+
+docker-up:
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose up -d || sudo docker-compose up -d
+	@echo "MariaDB is starting. Wait a few seconds for it to be ready."
+	@echo "Check status with: make docker-ps"
+	@echo "View logs with: make docker-logs"
+
+docker-down:
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose down || sudo docker-compose down
+
+docker-logs:
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose logs -f mariadb_10_5 || sudo docker-compose logs -f mariadb_10_5
+
+docker-ps:
+	@command -v docker-compose >/dev/null 2>&1 && docker-compose ps || sudo docker-compose ps
 
 check: isort flake8 mypy tox integration
 

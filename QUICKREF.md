@@ -38,7 +38,16 @@ pytest tests/                   # Run pytest directly
 pytest tests/test_fetching.py  # Run specific test file
 pytest -v                       # Verbose output
 pytest --cov=flask_restless     # With coverage
-make integration                # Integration tests (requires Docker)
+make integration                # Integration tests (auto-starts Docker)
+```
+
+### Docker (for Integration Tests)
+```bash
+make docker-up                  # Start MariaDB container
+make docker-down                # Stop MariaDB container
+make docker-logs                # View MariaDB logs
+make docker-ps                  # Check container status
+make integration                # Auto start/stop + run tests
 ```
 
 ### Code Quality

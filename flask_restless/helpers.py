@@ -246,7 +246,7 @@ def query_by_primary_key(session, model, pk_value, primary_key=None):
     if isinstance(pk_type, Integer):
         try:
             pk_value = int(pk_value)
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             pass
 
     query = session_query(session, model)
